@@ -95,7 +95,7 @@ ${OBJECTDIR}/mainSR.o: mainSR.s  nbproject/Makefile-${CND_CONF}.mk
 	${MP_AS} -mcpu=PIC16F18346 -c \
 	-o ${OBJECTDIR}/mainSR.o \
 	mainSR.s \
-	 -D__DEBUG=1    -fmax-errors=20 -mwarn=0 -xassembler-with-cpp
+	 -D__DEBUG=1   -mdfp="${DFP_DIR}/xc8"  -msummary=+mem,-psect,-class,-hex,-file,-sha1,-sha256,-xml,-xmlfull -fmax-errors=20 -mwarn=0 -xassembler-with-cpp
 	
 else
 ${OBJECTDIR}/mainSR.o: mainSR.s  nbproject/Makefile-${CND_CONF}.mk 
@@ -104,7 +104,7 @@ ${OBJECTDIR}/mainSR.o: mainSR.s  nbproject/Makefile-${CND_CONF}.mk
 	${MP_AS} -mcpu=PIC16F18346 -c \
 	-o ${OBJECTDIR}/mainSR.o \
 	mainSR.s \
-	   -fmax-errors=20 -mwarn=0 -xassembler-with-cpp
+	  -mdfp="${DFP_DIR}/xc8"  -msummary=+mem,-psect,-class,-hex,-file,-sha1,-sha256,-xml,-xmlfull -fmax-errors=20 -mwarn=0 -xassembler-with-cpp
 	
 endif
 
@@ -115,13 +115,13 @@ ${DISTDIR}/asm-pong.${IMAGE_TYPE}.${OUTPUT_SUFFIX}: ${OBJECTFILES}  nbproject/Ma
 	@${MKDIR} ${DISTDIR} 
 	${MP_LD} -mcpu=PIC16F18346 ${OBJECTFILES_QUOTED_IF_SPACED} \
 	-o ${DISTDIR}/asm-pong.${IMAGE_TYPE}.${OUTPUT_SUFFIX} \
-	 -D__DEBUG=1    -mcallgraph=std -Wl,-Map=${FINAL_IMAGE_NAME_MINUS_EXTENSION}.map -mno-download-hex
+	 -D__DEBUG=1   -mdfp="${DFP_DIR}/xc8"  -msummary=+mem,-psect,-class,-hex,-file,-sha1,-sha256,-xml,-xmlfull -mcallgraph=std -Wl,-Map=${FINAL_IMAGE_NAME_MINUS_EXTENSION}.map -mno-download-hex
 else
 ${DISTDIR}/asm-pong.${IMAGE_TYPE}.${OUTPUT_SUFFIX}: ${OBJECTFILES}  nbproject/Makefile-${CND_CONF}.mk   
 	@${MKDIR} ${DISTDIR} 
 	${MP_LD} -mcpu=PIC16F18346 ${OBJECTFILES_QUOTED_IF_SPACED} \
 	-o ${DISTDIR}/asm-pong.${IMAGE_TYPE}.${OUTPUT_SUFFIX} \
-	   -mcallgraph=std -Wl,-Map=${FINAL_IMAGE_NAME_MINUS_EXTENSION}.map -mno-download-hex
+	  -mdfp="${DFP_DIR}/xc8"  -msummary=+mem,-psect,-class,-hex,-file,-sha1,-sha256,-xml,-xmlfull -mcallgraph=std -Wl,-Map=${FINAL_IMAGE_NAME_MINUS_EXTENSION}.map -mno-download-hex
 endif
 
 
