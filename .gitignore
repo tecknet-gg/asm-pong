@@ -10,3 +10,6 @@ _build/
 cmake/**/.generated/*
 cmake/**/CMake*
 out/
+.DS_Store
+out/asm-pong/
+
