@@ -1,12 +1,3 @@
-.DS_Store
-.idea/asm-pong.iml
-.idea/discord.xml
-.idea/inspectionProfiles/profiles_settings.xml
-.idea/inspectionProfiles/Project_Default.xml
-.idea/misc.xml
-.idea/modules.xml
-.idea/vcs.xml
-
 .generated_files/
 build/
 dist/
@@ -19,8 +10,3 @@ _build/
 cmake/**/.generated/*
 cmake/**/CMake*
 out/
-.vscode/asm-pong.mplab.json
-.vscode/extensions.json
-.gitignore
-.vscode/settings.json
-.micropico
