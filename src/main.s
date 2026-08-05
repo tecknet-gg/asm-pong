@@ -56,11 +56,67 @@ yVelS: ds 1; y velocity subpixel of the ball
 s1: ds 1; score of player 1
 s2: ds 1; score of player 2
 
+WAIT1: ds 1;
+WAIT125: ds 1;
+WAIT10: ds 1;
+wait100: ds 1;
+wait1000: ds 1;
+
 
 psect code, class=CODE, space=0, delta=2
 
-start:
+wait125us:
+    movlw 199
+    movwf WAIT125; ~125us at 32Mhz -> 199 * 625ns = 124375ns
+    loop5ns: ;1+1+1+2 = 5
+        clrwdt ; 1
+        nop; 1
+        decfsz WAIT125, F ;1
+        goto loop5ns; 2
+        nop; 1
+    return; 2
+
+wait1ms:
+    movlw 8
+    movwf WAIT1;
+    loop1ms:
+        call wait125us; 2
+        decfsz WAIT1, F ;1
+        goto loop1ms; 2
+    return; 2
+
+wait10ms:
+    movlw 10
+    movwf WAIT10;
+    loop10ms:
+        call wait1ms; 2
+        decfsz WAIT, F ;1
+        goto loop10ms; 2
+    return; 2
+
+wait100ms:
+    movlw 10
+    movwf WAIT100;
+    loop100ms:
+        call wait1ms; 2
+        decfsz WAIT100, F ;1
+        goto loop100ms; 2
+    return; 2
+
+wait1000ms:
+    movlw 10
+    movwf WAIT1000;
+    loop1000ms:
+        call wait100ms; 2
+        decfsz WAIT1000, F ;1
+        goto loop1000ms; 2
+    return; 2
+
+
+    start:
 
 
 isr:
     retfie ;return from interrupt
+
+end
