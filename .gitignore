@@ -18,3 +18,4 @@ out/asm-pong/
 .micropico
 
 config.mcc/
+test.X/
