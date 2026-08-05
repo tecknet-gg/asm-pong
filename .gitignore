@@ -9,7 +9,12 @@ _build/
 !cmake/**/user.cmake
 cmake/**/.generated/*
 cmake/**/CMake*
-out/
 .DS_Store
 out/asm-pong/
 
+.vscode/extensions.json
+.vscode/settings.json
+
+.micropico
+
+config.mcc/
