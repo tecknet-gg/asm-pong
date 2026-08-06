@@ -90,7 +90,7 @@ wait10ms:
     movwf WAIT10;
     loop10ms:
         call wait1ms; 2
-        decfsz WAIT, F ;1
+        decfsz WAIT10, F ;1
         goto loop10ms; 2
     return; 2
 
@@ -113,7 +113,41 @@ wait1000ms:
     return; 2
 
 
-    start:
+start:
+    banksel OSCFRQ
+    movlw 0110B
+    movwf OSCFRQ ; set to 32Mhz (pg.93)
+
+    banksel TRISA
+    movlw 00110000B ; set RA4 and RA5 to input
+
+    banksel TRISB
+    movlw 01100000B ; set RB4 and RB5 to input
+
+    banksel TRISC
+    clrf TRISC 
+    
+    banksel ANSELA
+    movlw 00110000B ; set pots on RA4 and RA5 to analog
+    movwf ANSELA
+
+    banksel ANSELB
+    clrf ANSELB ; set all pins on PORTB to digital
+
+    banksel ANSELC
+    clrf ANSELC ; set all pins on PORTC to digital
+
+
+
+    banksel ADCON1
+    movlw 11110000B
+    movwf ADCON1 ; right justified, dedicated RC oscillator, VREFs connected to VDD and VSS (pg 240, 241, 245)
+
+    banksel ADCON0
+    bsf ADCON0, ADON; turn on ADC (pg 244)
+
+
+
 
 
 isr:
