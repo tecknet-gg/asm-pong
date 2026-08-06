@@ -34,7 +34,7 @@ org 0x0000
     goto start
 
 
-;INTERRUPT VECTOR
+;INTERUPT VECTOR
 psect intVec, class=CODE, space=0, delta=2, abs
 org 0x0004
     goto isr
