@@ -3633,16 +3633,6 @@
 	)
 	(wire
 		(pts
-			(xy 123.19 88.9) (xy 135.89 88.9)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "257eccdb-89e8-4856-98ab-03a47f83375f")
-	)
-	(wire
-		(pts
 			(xy 236.22 82.55) (xy 236.22 85.09)
 		)
 		(stroke
@@ -3660,16 +3650,6 @@
 			(type default)
 		)
 		(uuid "2e20e4ca-799b-47a0-92a3-5ebdde8c165a")
-	)
-	(wire
-		(pts
-			(xy 123.19 73.66) (xy 135.89 73.66)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "2f3eb343-b562-45fa-9f68-80968b333f66")
 	)
 	(wire
 		(pts
@@ -3873,16 +3853,6 @@
 	)
 	(wire
 		(pts
-			(xy 123.19 93.98) (xy 135.89 93.98)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "51640472-61cd-4137-8cd5-f3096da98167")
-	)
-	(wire
-		(pts
 			(xy 86.36 81.28) (xy 86.36 83.82)
 		)
 		(stroke
@@ -3940,16 +3910,6 @@
 			(type default)
 		)
 		(uuid "582d4406-4056-4ea5-a697-8f338d719765")
-	)
-	(wire
-		(pts
-			(xy 123.19 91.44) (xy 135.89 91.44)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "5d19d1fa-3ed4-413b-be61-9f2acb054c9a")
 	)
 	(wire
 		(pts
@@ -4020,16 +3980,6 @@
 			(type default)
 		)
 		(uuid "6738ac07-b350-42f6-8be8-e5db4e71bf4a")
-	)
-	(wire
-		(pts
-			(xy 93.98 91.44) (xy 100.33 91.44)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "67d73e74-9e2e-4a63-8aac-736deba00d1e")
 	)
 	(wire
 		(pts
@@ -4113,6 +4063,16 @@
 	)
 	(wire
 		(pts
+			(xy 123.19 86.36) (xy 135.89 86.36)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "7f655719-bf44-4ddc-85ac-6664f6e01d5e")
+	)
+	(wire
+		(pts
 			(xy 207.01 71.12) (xy 212.09 71.12)
 		)
 		(stroke
@@ -4150,6 +4110,16 @@
 			(type default)
 		)
 		(uuid "88085fa9-66c0-45d8-a7eb-94dfdb18deeb")
+	)
+	(wire
+		(pts
+			(xy 123.19 91.44) (xy 135.89 91.44)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "89de7e51-f95e-43d1-adbf-b8cd5f0f8163")
 	)
 	(wire
 		(pts
@@ -4250,16 +4220,6 @@
 			(type default)
 		)
 		(uuid "968ebc98-ccdc-4d84-9784-df30b9c2657b")
-	)
-	(wire
-		(pts
-			(xy 123.19 86.36) (xy 135.89 86.36)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "981104e3-c1ea-4348-a565-92ace86bf814")
 	)
 	(wire
 		(pts
@@ -4410,16 +4370,6 @@
 			(type default)
 		)
 		(uuid "af995781-e7da-4d0f-839f-b7917ddce17d")
-	)
-	(wire
-		(pts
-			(xy 93.98 137.16) (xy 100.33 137.16)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "b07a5dca-b6a8-48cf-836e-69d79a6da201")
 	)
 	(wire
 		(pts
@@ -4600,6 +4550,16 @@
 			(type default)
 		)
 		(uuid "d287538c-70da-41d5-9276-c5cb9255d1f5")
+	)
+	(wire
+		(pts
+			(xy 123.19 88.9) (xy 135.89 88.9)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "d2cccd46-ae3c-48bc-ad4e-d8b812895e0c")
 	)
 	(wire
 		(pts
@@ -4861,16 +4821,6 @@
 		)
 		(uuid "103fd6e3-9145-4d74-a940-5592be6171b3")
 	)
-	(label "RESET"
-		(at 123.19 88.9 0)
-		(effects
-			(font
-				(size 1.27 1.27)
-			)
-			(justify left bottom)
-		)
-		(uuid "1aead414-2a73-4b3f-92ae-8a134610e3b7")
-	)
 	(label "P2"
 		(at 222.25 82.55 180)
 		(effects
@@ -4880,16 +4830,6 @@
 			(justify right bottom)
 		)
 		(uuid "268f3423-7bc6-42c7-9b84-984a5620527d")
-	)
-	(label "START"
-		(at 123.19 86.36 0)
-		(effects
-			(font
-				(size 1.27 1.27)
-			)
-			(justify left bottom)
-		)
-		(uuid "31fa198d-339c-49f0-88da-991a585bbdfe")
 	)
 	(label "D0"
 		(at 118.11 124.46 0)
@@ -4931,6 +4871,16 @@
 		)
 		(uuid "46ee074f-d694-4739-95aa-1787667d2791")
 	)
+	(label "BUZZER"
+		(at 123.19 86.36 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "4a4bba41-6a12-4a83-92d5-4005c7287004")
+	)
 	(label "RCLK"
 		(at 26.67 78.74 0)
 		(effects
@@ -4950,16 +4900,6 @@
 			(justify right bottom)
 		)
 		(uuid "517b3aaf-0819-4716-bd1f-7f8eeeda08b0")
-	)
-	(label "EN2"
-		(at 100.33 137.16 180)
-		(effects
-			(font
-				(size 1.27 1.27)
-			)
-			(justify right bottom)
-		)
-		(uuid "5f94db0c-a9d3-400f-a921-1d6342e6836e")
 	)
 	(label "SER"
 		(at 26.67 66.04 0)
@@ -5011,15 +4951,15 @@
 		)
 		(uuid "7ebde245-1611-40c6-b4c4-adc0f94b527e")
 	)
-	(label "EN1"
-		(at 100.33 91.44 180)
+	(label "START"
+		(at 123.19 88.9 0)
 		(effects
 			(font
 				(size 1.27 1.27)
 			)
-			(justify right bottom)
+			(justify left bottom)
 		)
-		(uuid "85258f5d-8b26-4422-9c0c-95dd555c4540")
+		(uuid "89148103-f869-4866-bd04-de5820c8002e")
 	)
 	(label "DC"
 		(at 118.11 132.08 0)
@@ -5030,26 +4970,6 @@
 			(justify left bottom)
 		)
 		(uuid "930a5e99-e275-4684-a605-97735704e178")
-	)
-	(label "EN2"
-		(at 123.19 93.98 0)
-		(effects
-			(font
-				(size 1.27 1.27)
-			)
-			(justify left bottom)
-		)
-		(uuid "95d9c925-182f-4475-b167-6ba1087ee607")
-	)
-	(label "EN1"
-		(at 123.19 91.44 0)
-		(effects
-			(font
-				(size 1.27 1.27)
-			)
-			(justify left bottom)
-		)
-		(uuid "ac86996e-4b21-468d-a48e-b91001745344")
 	)
 	(label "D1"
 		(at 118.11 127 0)
@@ -5100,6 +5020,16 @@
 			(justify left bottom)
 		)
 		(uuid "c8ffdd2c-56ea-4418-bb53-371fd2e60a6e")
+	)
+	(label "RESET"
+		(at 123.19 91.44 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "ced7b542-6b64-42df-911e-047acabb952f")
 	)
 	(label "RESET"
 		(at 261.62 121.92 180)
@@ -5180,16 +5110,6 @@
 			(justify right bottom)
 		)
 		(uuid "f69b79a8-b167-47ec-98b0-a574fe994c36")
-	)
-	(label "BUZZER"
-		(at 123.19 73.66 0)
-		(effects
-			(font
-				(size 1.27 1.27)
-			)
-			(justify left bottom)
-		)
-		(uuid "fa62a768-932c-4a4f-9d79-03663317dbb0")
 	)
 	(symbol
 		(lib_id "power:Earth")
@@ -6731,7 +6651,7 @@
 	)
 	(symbol
 		(lib_id "power:Earth")
-		(at 86.36 96.52 0)
+		(at 86.36 86.36 0)
 		(unit 1)
 		(exclude_from_sim no)
 		(in_bom yes)
@@ -6740,7 +6660,7 @@
 		(fields_autoplaced yes)
 		(uuid "4fc032fa-bdee-4c20-a808-800763d36040")
 		(property "Reference" "#PWR026"
-			(at 86.36 102.87 0)
+			(at 86.36 92.71 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -6749,7 +6669,7 @@
 			)
 		)
 		(property "Value" "Earth"
-			(at 86.36 101.6 0)
+			(at 86.36 91.44 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -6758,7 +6678,7 @@
 			)
 		)
 		(property "Footprint" ""
-			(at 86.36 96.52 0)
+			(at 86.36 86.36 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -6767,7 +6687,7 @@
 			)
 		)
 		(property "Datasheet" "~"
-			(at 86.36 96.52 0)
+			(at 86.36 86.36 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -6776,7 +6696,7 @@
 			)
 		)
 		(property "Description" "Power symbol creates a global label with name \"Earth\""
-			(at 86.36 96.52 0)
+			(at 86.36 86.36 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -8796,80 +8716,6 @@
 		)
 	)
 	(symbol
-		(lib_id "Transistor_BJT:Q_NPN_BCE")
-		(at 88.9 91.44 0)
-		(mirror y)
-		(unit 1)
-		(exclude_from_sim no)
-		(in_bom yes)
-		(on_board yes)
-		(dnp no)
-		(uuid "b0aa982a-44f9-46c1-842b-b02d3b14490c")
-		(property "Reference" "Q2"
-			(at 93.218 92.964 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify left)
-			)
-		)
-		(property "Value" "Q_NPN_BCE"
-			(at 83.82 92.7099 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify left)
-				(hide yes)
-			)
-		)
-		(property "Footprint" ""
-			(at 83.82 88.9 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Datasheet" "~"
-			(at 88.9 91.44 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Description" "NPN transistor, base/collector/emitter"
-			(at 88.9 91.44 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(pin "2"
-			(uuid "dfbf96f0-d270-40c1-a91d-f7ec584ed498")
-		)
-		(pin "1"
-			(uuid "b3c48845-0921-4304-8ffa-8b8c054db33b")
-		)
-		(pin "3"
-			(uuid "78bfe5e9-0c9f-460e-a945-f247fd1cd083")
-		)
-		(instances
-			(project "pcb"
-				(path "/095fd1c6-3a4d-4d16-977e-3ab207ce523d"
-					(reference "Q2")
-					(unit 1)
-				)
-			)
-		)
-	)
-	(symbol
 		(lib_id "Device:R")
 		(at 60.96 76.2 90)
 		(unit 1)
@@ -9551,7 +9397,7 @@
 	)
 	(symbol
 		(lib_id "power:Earth")
-		(at 86.36 142.24 0)
+		(at 86.36 132.08 0)
 		(unit 1)
 		(exclude_from_sim no)
 		(in_bom yes)
@@ -9560,7 +9406,7 @@
 		(fields_autoplaced yes)
 		(uuid "d48523a9-1964-4b2b-8375-212497edcb7a")
 		(property "Reference" "#PWR032"
-			(at 86.36 148.59 0)
+			(at 86.36 138.43 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -9569,7 +9415,7 @@
 			)
 		)
 		(property "Value" "Earth"
-			(at 86.36 147.32 0)
+			(at 86.36 137.16 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -9578,7 +9424,7 @@
 			)
 		)
 		(property "Footprint" ""
-			(at 86.36 142.24 0)
+			(at 86.36 132.08 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -9587,7 +9433,7 @@
 			)
 		)
 		(property "Datasheet" "~"
-			(at 86.36 142.24 0)
+			(at 86.36 132.08 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -9596,7 +9442,7 @@
 			)
 		)
 		(property "Description" "Power symbol creates a global label with name \"Earth\""
-			(at 86.36 142.24 0)
+			(at 86.36 132.08 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -10202,80 +10048,6 @@
 			(project "pcb"
 				(path "/095fd1c6-3a4d-4d16-977e-3ab207ce523d"
 					(reference "#PWR010")
-					(unit 1)
-				)
-			)
-		)
-	)
-	(symbol
-		(lib_id "Transistor_BJT:Q_NPN_BCE")
-		(at 88.9 137.16 0)
-		(mirror y)
-		(unit 1)
-		(exclude_from_sim no)
-		(in_bom yes)
-		(on_board yes)
-		(dnp no)
-		(uuid "ef404c3c-e5bd-4c03-87d5-1de9a346d4eb")
-		(property "Reference" "Q3"
-			(at 93.218 138.684 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify left)
-			)
-		)
-		(property "Value" "Q_NPN_BCE"
-			(at 83.82 138.4299 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify left)
-				(hide yes)
-			)
-		)
-		(property "Footprint" ""
-			(at 83.82 134.62 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Datasheet" "~"
-			(at 88.9 137.16 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Description" "NPN transistor, base/collector/emitter"
-			(at 88.9 137.16 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(pin "2"
-			(uuid "601a2af7-e905-47da-9e75-ffd02929be11")
-		)
-		(pin "1"
-			(uuid "e272ab9c-001c-4c57-aa51-96fae9cf7c47")
-		)
-		(pin "3"
-			(uuid "c9db0243-2dd2-4810-9a07-540b22048f58")
-		)
-		(instances
-			(project "pcb"
-				(path "/095fd1c6-3a4d-4d16-977e-3ab207ce523d"
-					(reference "Q3")
 					(unit 1)
 				)
 			)

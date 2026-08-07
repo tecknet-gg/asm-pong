@@ -20,7 +20,7 @@ CONFIG DEBUG = OFF
 
 ;CONFIG 3
 CONFIG WRT = OFF
-CONFIG LVP = OFF
+CONFIG LVP = ON
 
 ;CONFIG 4
 CONFIG CP = OFF
@@ -39,7 +39,7 @@ psect intVec, class=CODE, space=0, delta=2, abs
 org 0x0004
     goto isr
 
-psect register, class=COMMON, space=1; pg(30, 47sg). ds reserves 1 byte. COMMON has 16 bytes accessible independent of banks
+psect common, class=COMMON, space=1; pg(30, 47sg). ds reserves 1 byte. COMMON has 16 bytes accessible independent of banks. space=1 - RAM space=0 - ROM
 
 y1: ds 1 ;y of paddle 1
 y2: ds 1; y of paddle 2
@@ -56,17 +56,20 @@ yVelS: ds 1; y velocity subpixel of the ball
 s1: ds 1; score of player 1
 s2: ds 1; score of player 2
 
-WAIT1: ds 1;
-WAIT125: ds 1;
-WAIT10: ds 1;
-wait100: ds 1;
-wait1000: ds 1;
+psect bank0, class=BANK0, space=1 
+
+WAIT1: ds 1
+WAIT125: ds 1
+WAIT10: ds 1
+WAIT100: ds 1
+WAIT1000: ds 1
 
 
 psect code, class=CODE, space=0, delta=2
 
 wait125us:
     movlw 199
+    banksel WAIT125
     movwf WAIT125; ~125us at 32Mhz -> 199 * 625ns = 124375ns
     loop5ns: ;1+1+1+2 = 5
         clrwdt ; 1
@@ -78,6 +81,7 @@ wait125us:
 
 wait1ms:
     movlw 8
+    banksel WAIT1
     movwf WAIT1;
     loop1ms:
         call wait125us; 2
@@ -87,6 +91,7 @@ wait1ms:
 
 wait10ms:
     movlw 10
+    banksel WAIT10
     movwf WAIT10;
     loop10ms:
         call wait1ms; 2
@@ -95,7 +100,8 @@ wait10ms:
     return; 2
 
 wait100ms:
-    movlw 10
+    movlw 100
+    banksel WAIT100
     movwf WAIT100;
     loop100ms:
         call wait1ms; 2
@@ -105,6 +111,7 @@ wait100ms:
 
 wait1000ms:
     movlw 10
+    banksel WAIT1000
     movwf WAIT1000;
     loop1000ms:
         call wait100ms; 2
@@ -120,9 +127,11 @@ start:
 
     banksel TRISA
     movlw 00110000B ; set RA4 and RA5 to input
+    movwf TRISA
 
     banksel TRISB
     movlw 01100000B ; set RB4 and RB5 to input
+    movwf TRISB
 
     banksel TRISC
     clrf TRISC 
@@ -138,19 +147,57 @@ start:
     clrf ANSELC ; set all pins on PORTC to digital
 
 
-
     banksel ADCON1
-    movlw 11110000B
-    movwf ADCON1 ; right justified, dedicated RC oscillator, VREFs connected to VDD and VSS (pg 240, 241, 245)
+    movlw 01110000B
+    movwf ADCON1 ; left justified, dedicated RC oscillator, VREFs connected to VDD and VSS (pg 240, 241, 245)
 
     banksel ADCON0
-    bsf ADCON0, ADON; turn on ADC (pg 244)
+    bsf ADCON0, ADON ; turn on ADC (pg 244)
+
+    goto  main
+
+main:
+    call read_paddle1
+    banksel y1
+    movwf y1 ; store paddle 1 position
+
+    call read_paddle2
+    banksel y2
+    movwf y2 ; store paddle 2 position
+
+    goto main
 
 
+read_paddle1:
+    banksel ADCON0
+    movlw 00010001B ; select RA4 as input channel (pg241)
+    movwf ADCON0
+    goto run_adc
+
+read_paddle2:
+    banksel ADCON0
+    movlw 00010101B ; select RA5 as input channel (pg241)
+    movwf ADCON0
+    goto run_adc
+
+run_adc:
+    call wait125us ; wait for acquisition (pg241)
+    banksel ADCON0
+    bsf ADCON0, ADGO
+    goto wait_adc
+    btfsc ADCON0, ADGO ; test to see if conversion is done
+    goto wait_adc
 
 
+wait_adc:
+    btfsc ADCON0, ADGO; test to see if conversion is done
+    goto wait_adc; go back to btsf if not done
+    banksel ADRESH
+    movf ADRESH, W; get the 8 upper bits
+    return
 
 isr:
     retfie ;return from interrupt
 
 end
+
