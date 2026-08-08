@@ -3215,6 +3215,26 @@
 		)
 		(uuid "624a79c2-048d-4118-b4d3-572224268cca")
 	)
+	(text "(SCK)\n"
+		(exclude_from_sim no)
+		(at 188.722 75.438 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+		)
+		(uuid "630eba6d-a8c4-41a2-a4d3-634638923bc1")
+	)
+	(text "(SDA)"
+		(exclude_from_sim no)
+		(at 188.722 77.978 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+		)
+		(uuid "80d7b61e-3de5-4eb1-9ea1-3a830773ec19")
+	)
 	(text "PIC\n"
 		(exclude_from_sim no)
 		(at 113.538 43.688 0)

@@ -1,3 +1,8 @@
+
+;***************************************** CONFIG *****************************************
+
+PROCESSOR 16F18346
+
 ;CONFIG BITS
 
 ;CONFIG 1
@@ -28,6 +33,9 @@ CONFIG CPD = OFF
 
 #include <xc.inc>
 
+;***************************************** VECTORS *****************************************
+
+
 ;RESET VECTOR
 psect resetVec, class=CODE, space=0, delta=2, abs
 org 0x0000
@@ -38,6 +46,9 @@ org 0x0000
 psect intVec, class=CODE, space=0, delta=2, abs
 org 0x0004
     goto isr
+
+;***************************************** REGISTERS *****************************************
+
 
 psect common, class=COMMON, space=1; pg(30, 47sg). ds reserves 1 byte. COMMON has 16 bytes accessible independent of banks. space=1 - RAM space=0 - ROM
 
@@ -65,7 +76,12 @@ WAIT100: ds 1
 WAIT1000: ds 1
 
 
+
+;***************************************** SUBROUTINES *****************************************
+
+
 psect code, class=CODE, space=0, delta=2
+
 
 wait125us:
     movlw 199
@@ -120,11 +136,13 @@ wait1000ms:
     return; 2
 
 
-start:
+set_frq:
     banksel OSCFRQ
     movlw 0110B
     movwf OSCFRQ ; set to 32Mhz (pg.93)
+    return
 
+setup_ports:
     banksel TRISA
     movlw 00110000B ; set RA4 and RA5 to input
     movwf TRISA
@@ -132,9 +150,6 @@ start:
     banksel TRISB
     movlw 01100000B ; set RB4 and RB5 to input
     movwf TRISB
-
-    banksel TRISC
-    clrf TRISC 
     
     banksel ANSELA
     movlw 00110000B ; set pots on RA4 and RA5 to analog
@@ -142,31 +157,52 @@ start:
 
     banksel ANSELB
     clrf ANSELB ; set all pins on PORTB to digital
+    return
+
+setup_pps:
+    banksel TRISC
+    clrf TRISC
 
     banksel ANSELC
     clrf ANSELC ; set all pins on PORTC to digital
 
+    banksel LATC
+    movlw 10100000B ; 
+    movwf LATC ; set RC5 and RC7 to high (pg. 145)
 
+    bcf INTCON, 7 ; disable global interrupts (pg. 103)
+    banksel PPSLOCK ;required sequence (pg.161)
+    movlw 0x55
+    movwf PPSLOCK
+    movlw 0xAA
+    movwf PPSLOCK 
+    bcf PPSLOCK, 0 ; unlock PPS
+
+    banksel RC3PPS
+    movlw 00011000B ;11000 = SCK1/SCL1 (pg 163)
+    movwf RC3PPS 
+
+    banksel RC4PPS
+    movlw 00011001B ;11001 = SDO1/SDA1 (pg 163)
+    movwf RC4PPS
+
+    banksel PPSLOCK
+    movlw 0x55
+    movwf PPSLOCK
+    movlw 0xAA
+    movwf PPSLOCK
+    bsf PPSLOCK, 0 ; lock PPS
+
+    return
+
+setup_adc:
     banksel ADCON1
     movlw 01110000B
     movwf ADCON1 ; left justified, dedicated RC oscillator, VREFs connected to VDD and VSS (pg 240, 241, 245)
 
     banksel ADCON0
-    bsf ADCON0, ADON ; turn on ADC (pg 244)
-
-    goto  main
-
-main:
-    call read_paddle1
-    banksel y1
-    movwf y1 ; store paddle 1 position
-
-    call read_paddle2
-    banksel y2
-    movwf y2 ; store paddle 2 position
-
-    goto main
-
+    bsf ADCON0, 0 ; turn on ADC (pg 244)
+    return
 
 read_paddle1:
     banksel ADCON0
@@ -183,18 +219,44 @@ read_paddle2:
 run_adc:
     call wait125us ; wait for acquisition (pg241)
     banksel ADCON0
-    bsf ADCON0, ADGO
-    goto wait_adc
-    btfsc ADCON0, ADGO ; test to see if conversion is done
+    bsf ADCON0, 1
     goto wait_adc
 
 
 wait_adc:
-    btfsc ADCON0, ADGO; test to see if conversion is done
+    btfsc ADCON0, 1; test to see if conversion is done
     goto wait_adc; go back to btsf if not done
     banksel ADRESH
     movf ADRESH, W; get the 8 upper bits
     return
+
+
+
+;****************************************** STARTUP *****************************************
+
+start:
+    call set_frq
+    
+    call setup_ports
+    call setup_pps
+
+    call setup_adc
+
+;***************************************** MAIN LOOP *****************************************
+
+main:
+    call read_paddle1
+    banksel y1
+    movwf y1 ; store paddle 1 position
+
+    call read_paddle2
+    banksel y2
+    movwf y2 ; store paddle 2 position
+
+    goto main
+
+
+;**************************************** INTERRUPTS *****************************************
 
 isr:
     retfie ;return from interrupt
