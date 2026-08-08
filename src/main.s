@@ -150,6 +150,9 @@ setup_ports:
     banksel TRISB
     movlw 01100000B ; set RB4 and RB5 to input
     movwf TRISB
+
+    banksel TRISC
+    clrf TRISC
     
     banksel ANSELA
     movlw 00110000B ; set pots on RA4 and RA5 to analog
@@ -157,18 +160,17 @@ setup_ports:
 
     banksel ANSELB
     clrf ANSELB ; set all pins on PORTB to digital
-    return
-
-setup_pps:
-    banksel TRISC
-    clrf TRISC
 
     banksel ANSELC
     clrf ANSELC ; set all pins on PORTC to digital
 
+    return
+
+setup_pps:
+
     banksel LATC
     movlw 10100000B ; 
-    movwf LATC ; set RC5 and RC7 to high (pg. 145)
+    movwf LATC ; Latching RC7 (RESET - active low) and RC5 (CS - chip select) to HIGH
 
     bcf INTCON, 7 ; disable global interrupts (pg. 103)
     banksel PPSLOCK ;required sequence (pg.161)
@@ -231,15 +233,27 @@ wait_adc:
     return
 
 
+check_score:
+    banksel s1
+    movf s1, W
+    xorlw 9 ; check if player 1 has 9 points
+    btfsc STATUS, Z
+    goto player1_wins
 
-;****************************************** STARTUP *****************************************
+    banksel s2
+    movf s2, W
+    xorlw 9
+    btfsc STATUS, Z
+    goto player2_wins
+
+    return
+
+;****************************************** STARTUP ******************************************
 
 start:
     call set_frq
-    
     call setup_ports
     call setup_pps
-
     call setup_adc
 
 ;***************************************** MAIN LOOP *****************************************
