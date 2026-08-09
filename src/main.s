@@ -33,6 +33,13 @@ CONFIG CPD = OFF
 
 #include <xc.inc>
 
+;************************************** REGISTER BITS *************************************
+
+C equ 00H ; carry 
+Z EQU 02h ; zero
+
+
+
 ;***************************************** VECTORS *****************************************
 
 
@@ -52,28 +59,32 @@ org 0x0004
 
 psect common, class=COMMON, space=1; pg(30, 47sg). ds reserves 1 byte. COMMON has 16 bytes accessible independent of banks. space=1 - RAM space=0 - ROM
 
-y1: ds 1 ;y of paddle 1
-y2: ds 1; y of paddle 2
+    y1: ds 1 ;y of paddle 1
+    y2: ds 1; y of paddle 2
 
-xF: ds 1; full x pixel of the ball
-yF: ds 1; full y pixel of the ball
+    xF: ds 1; full x pixel of the ball
+    yF: ds 1; full y pixel of the ball
 
-xS: ds 1; x subpixel of the ball
-yS: ds 1; y subpixel of the ball
+    xS: ds 1; x subpixel of the ball
+    yS: ds 1; y subpixel of the ball
 
-xVelS: ds 1; x velocity subpixel of the ball
-yVelS: ds 1; y velocity subpixel of the ball
+    dir: ds 1; bit0 - x direction (0=left, 1=right), bit1 - y direction (0=up, 1=down)
 
-s1: ds 1; score of player 1
-s2: ds 1; score of player 2
+    xVelS: ds 1; x velocity subpixel of the ball
+    yVelS: ds 1; y velocity subpixel of the ball
+
+    s1: ds 1; score of player 1
+    s2: ds 1; score of player 2
+
+
 
 psect bank0, class=BANK0, space=1 
 
-WAIT1: ds 1
-WAIT125: ds 1
-WAIT10: ds 1
-WAIT100: ds 1
-WAIT1000: ds 1
+    WAIT1: ds 1
+    WAIT125: ds 1
+    WAIT10: ds 1
+    WAIT100: ds 1
+    WAIT1000: ds 1
 
 
 
@@ -82,171 +93,235 @@ WAIT1000: ds 1
 
 psect code, class=CODE, space=0, delta=2
 
+    wait125us:
+        movlw 199
+        banksel WAIT125
+        movwf WAIT125; ~125us at 32Mhz -> 199 * 625ns = 124375ns
+        loop5ns: ;1+1+1+2 = 5
+            clrwdt ; 1
+            nop; 1
+            decfsz WAIT125, F ;1
+            goto loop5ns; 2
+            nop; 1
+        return; 2
 
-wait125us:
-    movlw 199
-    banksel WAIT125
-    movwf WAIT125; ~125us at 32Mhz -> 199 * 625ns = 124375ns
-    loop5ns: ;1+1+1+2 = 5
-        clrwdt ; 1
-        nop; 1
-        decfsz WAIT125, F ;1
-        goto loop5ns; 2
-        nop; 1
-    return; 2
-
-wait1ms:
-    movlw 8
-    banksel WAIT1
-    movwf WAIT1;
-    loop1ms:
-        call wait125us; 2
-        decfsz WAIT1, F ;1
-        goto loop1ms; 2
-    return; 2
-
-wait10ms:
-    movlw 10
-    banksel WAIT10
-    movwf WAIT10;
-    loop10ms:
-        call wait1ms; 2
-        decfsz WAIT10, F ;1
-        goto loop10ms; 2
-    return; 2
-
-wait100ms:
-    movlw 100
-    banksel WAIT100
-    movwf WAIT100;
-    loop100ms:
-        call wait1ms; 2
-        decfsz WAIT100, F ;1
-        goto loop100ms; 2
-    return; 2
-
-wait1000ms:
-    movlw 10
-    banksel WAIT1000
-    movwf WAIT1000;
-    loop1000ms:
-        call wait100ms; 2
-        decfsz WAIT1000, F ;1
-        goto loop1000ms; 2
-    return; 2
+    wait1ms:
+        movlw 8
+        banksel WAIT1
+        movwf WAIT1;
+        loop1ms:
+            call wait125us; 2
+            decfsz WAIT1, F ;1
+            goto loop1ms; 2
+        return; 2
 
 
-set_frq:
-    banksel OSCFRQ
-    movlw 0110B
-    movwf OSCFRQ ; set to 32Mhz (pg.93)
-    return
+    wait10ms:
+        movlw 10
+        banksel WAIT10
+        movwf WAIT10;
+        loop10ms:
+            call wait1ms; 2
+            decfsz WAIT10, F ;1
+            goto loop10ms; 2
+        return; 2
 
-setup_ports:
-    banksel TRISA
-    movlw 00110000B ; set RA4 and RA5 to input
-    movwf TRISA
+    wait100ms:
+        movlw 100
+        banksel WAIT100
+        movwf WAIT100;
+        loop100ms:
+            call wait1ms; 2
+            decfsz WAIT100, F ;1
+            goto loop100ms; 2
+        return; 2
 
-    banksel TRISB
-    movlw 01100000B ; set RB4 and RB5 to input
-    movwf TRISB
+    wait1000ms:
+        movlw 10
+        banksel WAIT1000
+        movwf WAIT1000;
+        loop1000ms:
+            call wait100ms; 2
+            decfsz WAIT1000, F ;1
+            goto loop1000ms; 2
+        return; 2
 
-    banksel TRISC
-    clrf TRISC
+
+    set_frq:
+        banksel OSCFRQ
+        movlw 0110B
+        movwf OSCFRQ ; set to 32Mhz (pg.93)
+        return
+
+    setup_ports:
+        banksel TRISA
+        movlw 00110000B ; set RA4 and RA5 to input
+        movwf TRISA
+
+        banksel TRISB
+        movlw 01100000B ; set RB4 and RB5 to input
+        movwf TRISB
+
+        banksel TRISC
+        clrf TRISC
     
-    banksel ANSELA
-    movlw 00110000B ; set pots on RA4 and RA5 to analog
-    movwf ANSELA
+        banksel ANSELA
+        movlw 00110000B ; set pots on RA4 and RA5 to analog
+        movwf ANSELA
 
-    banksel ANSELB
-    clrf ANSELB ; set all pins on PORTB to digital
+        banksel ANSELB
+        clrf ANSELB ; set all pins on PORTB to digital
 
-    banksel ANSELC
-    clrf ANSELC ; set all pins on PORTC to digital
+        banksel ANSELC
+        clrf ANSELC ; set all pins on PORTC to digital
 
-    return
+        return
 
-setup_pps:
+    setup_pps:
 
-    banksel LATC
-    movlw 10100000B ; 
-    movwf LATC ; Latching RC7 (RESET - active low) and RC5 (CS - chip select) to HIGH
+        banksel LATC
+        movlw 10100000B ; 
+        movwf LATC ; Latching RC7 (RESET - active low) and RC5 (CS - chip select) to HIGH
 
-    bcf INTCON, 7 ; disable global interrupts (pg. 103)
-    banksel PPSLOCK ;required sequence (pg.161)
-    movlw 0x55
-    movwf PPSLOCK
-    movlw 0xAA
-    movwf PPSLOCK 
-    bcf PPSLOCK, 0 ; unlock PPS
+        bcf INTCON, 7 ; disable global interrupts (pg. 103)
+        banksel PPSLOCK ;required sequence (pg.161)
+        movlw 0x55
+        movwf PPSLOCK
+        movlw 0xAA
+        movwf PPSLOCK 
+        bcf PPSLOCK, 0 ; unlock PPS
 
-    banksel RC3PPS
-    movlw 00011000B ;11000 = SCK1/SCL1 (pg 163)
-    movwf RC3PPS 
+        banksel RC3PPS
+        movlw 00011000B ;11000 = SCK1/SCL1 (pg 163)
+        movwf RC3PPS 
 
-    banksel RC4PPS
-    movlw 00011001B ;11001 = SDO1/SDA1 (pg 163)
-    movwf RC4PPS
+        banksel RC4PPS
+        movlw 00011001B ;11001 = SDO1/SDA1 (pg 163)
+        movwf RC4PPS
 
-    banksel PPSLOCK
-    movlw 0x55
-    movwf PPSLOCK
-    movlw 0xAA
-    movwf PPSLOCK
-    bsf PPSLOCK, 0 ; lock PPS
+        banksel PPSLOCK
+        movlw 0x55
+        movwf PPSLOCK
+        movlw 0xAA
+        movwf PPSLOCK
+        bsf PPSLOCK, 0 ; lock PPS
 
-    return
+        return
 
-setup_adc:
-    banksel ADCON1
-    movlw 01110000B
-    movwf ADCON1 ; left justified, dedicated RC oscillator, VREFs connected to VDD and VSS (pg 240, 241, 245)
+    setup_adc:
+        banksel ADCON1
+        movlw 01110000B
+        movwf ADCON1 ; left justified, dedicated RC oscillator, VREFs connected to VDD and VSS (pg 240, 241, 245)
 
-    banksel ADCON0
-    bsf ADCON0, 0 ; turn on ADC (pg 244)
-    return
-
-read_paddle1:
-    banksel ADCON0
-    movlw 00010001B ; select RA4 as input channel (pg241)
-    movwf ADCON0
-    goto run_adc
-
-read_paddle2:
-    banksel ADCON0
-    movlw 00010101B ; select RA5 as input channel (pg241)
-    movwf ADCON0
-    goto run_adc
-
-run_adc:
-    call wait125us ; wait for acquisition (pg241)
-    banksel ADCON0
-    bsf ADCON0, 1
-    goto wait_adc
+        banksel ADCON0
+        bsf ADCON0, 0 ; turn on ADC (pg 244)
+        return
 
 
-wait_adc:
-    btfsc ADCON0, 1; test to see if conversion is done
-    goto wait_adc; go back to btsf if not done
-    banksel ADRESH
-    movf ADRESH, W; get the 8 upper bits
-    return
+    read_paddle1:
+        banksel ADCON0
+        movlw 00010001B ; select RA4 as input channel (pg241)
+        movwf ADCON0
+        goto run_adc
+
+    read_paddle2:
+        banksel ADCON0
+        movlw 00010101B ; select RA5 as input channel (pg241)
+        movwf ADCON0
+        goto run_adc
+
+    run_adc:
+        call wait125us ; wait for acquisition (pg241)
+        banksel ADCON0
+        bsf ADCON0, 1
+        goto wait_adc
 
 
-check_score:
-    banksel s1
-    movf s1, W
-    xorlw 9 ; check if player 1 has 9 points
-    btfsc STATUS, Z
-    goto player1_wins
+    wait_adc:
+        btfsc ADCON0, 1; test to see if conversion is done
+        goto wait_adc; go back to btsf if not done
+        banksel ADRESH
+        movf ADRESH, W; get the 8 upper bits
+        return
 
-    banksel s2
-    movf s2, W
-    xorlw 9
-    btfsc STATUS, Z
-    goto player2_wins
 
-    return
+    check_score:
+        banksel s1
+        movf s1, W
+        xorlw 9 ; check if player 1 has 9 points
+        btfsc STATUS, Z ; read the Z status bit.
+        ;goto player1_wins
+
+        banksel s2
+        movf s2, W
+        xorlw 9
+        btfsc STATUS, Z
+        ;goto player2_wins
+
+        return
+
+    reset_ball:
+        
+        movlw 64
+        movwf xF ; set x coordinate
+    
+        movlw 32
+        movwf yF ; set y coordinate
+
+        clrf xS ; clear the sub pixel values
+        clrf yS
+
+        movlw 192
+        movwf xVelS
+        movlw 0
+        movwf yVelS
+
+        movlw 0b00000011 
+        movwf dir
+        return
+
+    update_ball:
+        btfsc dir, 0 ; 0 - left, 1 - right
+        goto ball_right
+        goto ball_left
+    
+    ball_right:
+        movf xVelS, W
+        addwf xS, F
+        btfsc STATUS, C ; did it overflow?
+        incf xF, F
+        goto update_y
+
+
+    ball_left:
+        movf xVelS, W
+        subwf xS, F
+        btfss STATUS, C ; did it carry?
+        decf xF, F
+        goto update_y
+
+    update_y:
+        btfss dir, 1 ; 0 - up, 1 - down
+        goto ball_up
+        goto ball_down
+    
+    
+    ball_up:
+        movf yVelS, W
+        subwf yS, F
+        btfss STATUS, C ; did it carry?
+        decf yF, F
+        return
+
+    ball_down:
+        movf yVelS, W
+        addwf yS, F
+        btfsc STATUS, C ; did it overflow?
+        incf yF, F
+        return
+
+
+
 
 ;****************************************** STARTUP ******************************************
 
@@ -255,6 +330,18 @@ start:
     call setup_ports
     call setup_pps
     call setup_adc
+
+    movlw 32 ; set y1 and y2 to 32 at the start
+    movwf y1    
+    movwf y2
+
+    call reset_ball
+
+    ;x1 = 1 - paddle 2px wide
+    ;x2 = 126 - paddle 2px wide
+    ;paddle is 11 px tall
+        
+
 
 ;***************************************** MAIN LOOP *****************************************
 
@@ -267,8 +354,10 @@ main:
     banksel y2
     movwf y2 ; store paddle 2 position
 
-    goto main
+    call update_ball
 
+
+    goto main
 
 ;**************************************** INTERRUPTS *****************************************
 
