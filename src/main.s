@@ -38,8 +38,6 @@ CONFIG CPD = OFF
 C equ 00H ; carry 
 Z EQU 02h ; zero
 
-
-
 ;***************************************** VECTORS *****************************************
 
 
@@ -92,7 +90,6 @@ psect bank0, class=BANK0, space=1
 
 
 psect code, class=CODE, space=0, delta=2
-
     wait125us:
         movlw 199
         banksel WAIT125
@@ -216,19 +213,25 @@ psect code, class=CODE, space=0, delta=2
         banksel ADCON0
         bsf ADCON0, 0 ; turn on ADC (pg 244)
         return
-
+    
+    reset_paddles:
+        movlw 32; set y1 and y2 of the paddles to 32
+        movwf y1
+        movwf y2
 
     read_paddle1:
         banksel ADCON0
         movlw 00010001B ; select RA4 as input channel (pg241)
         movwf ADCON0
-        goto run_adc
+        call run_adc
+        return
 
     read_paddle2:
         banksel ADCON0
         movlw 00010101B ; select RA5 as input channel (pg241)
         movwf ADCON0
-        goto run_adc
+        call run_adc
+        return
 
     run_adc:
         call wait125us ; wait for acquisition (pg241)
@@ -236,8 +239,8 @@ psect code, class=CODE, space=0, delta=2
         bsf ADCON0, 1
         goto wait_adc
 
-
     wait_adc:
+        banksel ADCON0
         btfsc ADCON0, 1; test to see if conversion is done
         goto wait_adc; go back to btsf if not done
         banksel ADRESH
@@ -292,7 +295,6 @@ psect code, class=CODE, space=0, delta=2
         incf xF, F
         goto update_y
 
-
     ball_left:
         movf xVelS, W
         subwf xS, F
@@ -305,8 +307,8 @@ psect code, class=CODE, space=0, delta=2
         goto ball_up
         goto ball_down
     
-    
     ball_up:
+
         movf yVelS, W
         subwf yS, F
         btfss STATUS, C ; did it carry?
@@ -314,11 +316,25 @@ psect code, class=CODE, space=0, delta=2
         return
 
     ball_down:
+
         movf yVelS, W
         addwf yS, F
         btfsc STATUS, C ; did it overflow?
         incf yF, F
         return
+
+    update_paddle1:
+        call read_paddle1
+        banksel y1
+        movwf y1
+        return
+    
+    update_paddle2:
+        call read_paddle2
+        banksel y2
+        movwf y2
+        return
+    
 
 
 
@@ -331,10 +347,7 @@ start:
     call setup_pps
     call setup_adc
 
-    movlw 32 ; set y1 and y2 to 32 at the start
-    movwf y1    
-    movwf y2
-
+    call reset_paddles
     call reset_ball
 
     ;x1 = 1 - paddle 2px wide
@@ -347,13 +360,7 @@ start:
 
 main:
     call read_paddle1
-    banksel y1
-    movwf y1 ; store paddle 1 position
-
     call read_paddle2
-    banksel y2
-    movwf y2 ; store paddle 2 position
-
     call update_ball
 
 
