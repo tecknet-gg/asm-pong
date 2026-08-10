@@ -35,8 +35,8 @@ CONFIG CPD = OFF
 
 ;************************************** REGISTER BITS *************************************
 
-C equ 00H ; carry 
-Z EQU 02h ; zero
+C equ 0x00 ; carry 
+Z equ 0x02 ; zero
 
 ;***************************************** VECTORS *****************************************
 
@@ -75,6 +75,7 @@ psect common, class=COMMON, space=1; pg(30, 47sg). ds reserves 1 byte. COMMON ha
     s2: ds 1; score of player 2
 
     yTemp: ds 1;
+    substeps: ds 1; sub step counter
 
 
 
@@ -154,18 +155,18 @@ psect code, class=CODE, space=0, delta=2
 
     setup_ports:
         banksel TRISA
-        movlw 00110000B ; set RA4 and RA5 to input
+        movlw 0b00110000 ; set RA4 and RA5 to input
         movwf TRISA
 
         banksel TRISB
-        movlw 01100000B ; set RB4 and RB5 to input
+        movlw 0b01100000 ; set RB4 and RB5 to input
         movwf TRISB
 
         banksel TRISC
         clrf TRISC
     
         banksel ANSELA
-        movlw 00110000B ; set pots on RA4 and RA5 to analog
+        movlw 0b00110000 ; set pots on RA4 and RA5 to analog
         movwf ANSELA
 
         banksel ANSELB
@@ -179,7 +180,7 @@ psect code, class=CODE, space=0, delta=2
     setup_pps:
 
         banksel LATC
-        movlw 10100000B ; 
+        movlw 0b10100000 ; 
         movwf LATC ; Latching RC7 (RESET - active low) and RC5 (CS - chip select) to HIGH
 
         bcf INTCON, 7 ; disable global interrupts (pg. 103)
@@ -191,11 +192,11 @@ psect code, class=CODE, space=0, delta=2
         bcf PPSLOCK, 0 ; unlock PPS
 
         banksel RC3PPS
-        movlw 00011000B ;11000 = SCK1/SCL1 (pg 163)
+        movlw 0b00011000 ;11000 = SCK1/SCL1 (pg 163)
         movwf RC3PPS 
 
         banksel RC4PPS
-        movlw 00011001B ;11001 = SDO1/SDA1 (pg 163)
+        movlw 0b00011001 ;11001 = SDO1/SDA1 (pg 163)
         movwf RC4PPS
 
         banksel PPSLOCK
@@ -209,7 +210,7 @@ psect code, class=CODE, space=0, delta=2
 
     setup_adc:
         banksel ADCON1
-        movlw 01110000B
+        movlw 0b01110000
         movwf ADCON1 ; left justified, dedicated RC oscillator, VREFs connected to VDD and VSS (pg 240, 241, 245)
 
         banksel ADCON0
@@ -223,14 +224,14 @@ psect code, class=CODE, space=0, delta=2
 
     read_paddle1:
         banksel ADCON0
-        movlw 00010001B ; select RA4 as input channel (pg241)
+        movlw 0b00010001 ; select RA4 as input channel (pg241)
         movwf ADCON0
         call run_adc
         return
 
     read_paddle2:
         banksel ADCON0
-        movlw 00010101B ; select RA5 as input channel (pg241)
+        movlw 0b00010101 ; select RA5 as input channel (pg241)
         movwf ADCON0
         call run_adc
         return
@@ -266,7 +267,6 @@ psect code, class=CODE, space=0, delta=2
         return
 
     reset_ball:
-        
         movlw 64
         movwf xF ; set x coordinate
     
@@ -388,6 +388,9 @@ start:
     call reset_paddles
     call reset_ball
 
+    movlw 2 ;two updates per frame
+    movwf substeps
+
     ;x1 = 1 - paddle 2px wide
     ;x2 = 126 - paddle 2px wide
     ;paddle is 11 px tall
@@ -397,10 +400,21 @@ start:
 ;***************************************** MAIN LOOP *****************************************
 
 main:
-    call read_paddle1
-    call read_paddle2
-    call update_ball
+    call update_paddle1
+    call update_paddle2
 
+    goto physics_loop
+
+
+physics_loop:
+    call update_ball
+    ;all wall_collisions
+    ;all paddle_collisions
+
+    decfsz substeps, F
+    goto physics_loop
+
+    ;
 
     goto main
 
