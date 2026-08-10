@@ -74,6 +74,8 @@ psect common, class=COMMON, space=1; pg(30, 47sg). ds reserves 1 byte. COMMON ha
     s1: ds 1; score of player 1
     s2: ds 1; score of player 2
 
+    yTemp: ds 1;
+
 
 
 psect bank0, class=BANK0, space=1 
@@ -325,14 +327,50 @@ psect code, class=CODE, space=0, delta=2
 
     update_paddle1:
         call read_paddle1
+        
+        call scale_paddle
+        call clamp
+        
         banksel y1
         movwf y1
         return
     
     update_paddle2:
         call read_paddle2
+        
+        call scale_paddle
+        call clamp
+
         banksel y2
         movwf y2
+        return
+
+    scale_paddle:
+        movwf yTemp
+        lsrf yTemp, F ; right shift
+        lsrf yTemp, F ; right shift
+        return
+    
+    clamp:
+        movlw 5
+        subwf yTemp, W 
+        btfss STATUS, C
+        goto clamp_low
+
+        movlw 59
+        subwf yTemp, W
+        btfsc STATUS, C
+        goto clamp_high
+    
+        movf yTemp, W
+        return
+
+    clamp_low:
+        movlw 5
+        return
+    
+    clamp_high:
+        movlw 59
         return
     
 

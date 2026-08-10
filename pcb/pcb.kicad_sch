@@ -3204,7 +3204,7 @@
 	)
 	(text "Start/Reset Buttons\n"
 		(exclude_from_sim no)
-		(at 209.042 100.076 0)
+		(at 209.042 100.584 0)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -3214,7 +3214,7 @@
 	)
 	(text "Paddle Pots\n"
 		(exclude_from_sim no)
-		(at 206.756 53.34 0)
+		(at 206.248 53.594 0)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -3244,7 +3244,7 @@
 	)
 	(text "PIC\n"
 		(exclude_from_sim no)
-		(at 110.998 43.688 0)
+		(at 110.744 43.18 0)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -3254,7 +3254,7 @@
 	)
 	(text "Power Barrel\n"
 		(exclude_from_sim no)
-		(at 252.222 74.93 0)
+		(at 252.476 75.184 0)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -3274,7 +3274,7 @@
 	)
 	(text "Score Displays\n"
 		(exclude_from_sim no)
-		(at 29.972 41.91 0)
+		(at 29.972 43.18 0)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -3827,16 +3827,6 @@
 			(type default)
 		)
 		(uuid "48fd20b6-da4e-4562-a3a8-07b823a9cd94")
-	)
-	(wire
-		(pts
-			(xy 127 45.72) (xy 120.65 45.72)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "4a78d868-a82d-41c2-af56-1fddaca7cc7b")
 	)
 	(wire
 		(pts
@@ -4877,16 +4867,6 @@
 			(justify left bottom)
 		)
 		(uuid "32e4b3a1-346a-49e8-93fc-0984a9339495")
-	)
-	(label "EN2"
-		(at 120.65 45.72 0)
-		(effects
-			(font
-				(size 1.27 1.27)
-			)
-			(justify left bottom)
-		)
-		(uuid "3ea1a866-423b-45f8-8896-b9fed3d014a8")
 	)
 	(label "P1"
 		(at 120.65 78.74 0)
