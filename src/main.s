@@ -370,7 +370,7 @@ psect code, class=CODE, space=0, delta=2
         return
     
     clamp_high:
-        movlw 59
+        movlw 58
         return
     
 
