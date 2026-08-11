@@ -52,7 +52,12 @@
         }
       },
       "diff_pair_dimensions": [],
-      "drc_exclusions": [],
+      "drc_exclusions": [
+        [
+          "lib_footprint_mismatch|149565000|69697400|b41d3152-132c-4cae-aa47-98b9b345beab|00000000-0000-0000-0000-000000000000",
+          "Using 7 pin header for OLED"
+        ]
+      ],
       "meta": {
         "version": 2
       },
