@@ -1,4 +1,7 @@
 from machine import Pin
-
-led = Pin(25, Pin.OUT)
-led.on()
+import time
+while True:
+    led = Pin(25, Pin.OUT)
+    led.on()
+    time.sleep(10)
+    led.o
