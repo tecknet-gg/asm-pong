@@ -17,5 +17,5 @@ out/asm-pong/
 
 config.mcc/
 test.X/
-pcb/pong-backups/
+pcb/pcb-backups/
 src/asm-pong.code-workspace

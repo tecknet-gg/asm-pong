@@ -54,6 +54,14 @@
       "diff_pair_dimensions": [],
       "drc_exclusions": [
         [
+          "clearance|111985000|107135000|065d9b12-74c6-4f12-a3cc-501fe666bb49|4c9a35f0-55c2-4c56-a664-1f6accf262ae",
+          ""
+        ],
+        [
+          "clearance|114000000|107135000|37d358ef-8e68-4d62-8580-320ff6a4723e|065d9b12-74c6-4f12-a3cc-501fe666bb49",
+          ""
+        ],
+        [
           "lib_footprint_mismatch|149565000|69697400|b41d3152-132c-4cae-aa47-98b9b345beab|00000000-0000-0000-0000-000000000000",
           "Using 7 pin header for OLED"
         ]
@@ -477,6 +485,20 @@
         "via_diameter": 0.6,
         "via_drill": 0.3,
         "wire_width": 6
+      },
+      {
+        "clearance": 0.25,
+        "diff_pair_gap": 0.25,
+        "diff_pair_width": 0.2,
+        "microvia_diameter": 0.3,
+        "microvia_drill": 0.1,
+        "name": "Power",
+        "pcb_color": "rgba(0, 0, 0, 0.000)",
+        "priority": 0,
+        "schematic_color": "rgba(0, 0, 0, 0.000)",
+        "track_width": 0.5,
+        "via_diameter": 0.8,
+        "via_drill": 0.4
       }
     ],
     "meta": {
@@ -484,7 +506,16 @@
     },
     "net_colors": null,
     "netclass_assignments": null,
-    "netclass_patterns": []
+    "netclass_patterns": [
+      {
+        "netclass": "Power",
+        "pattern": "+3.3V"
+      },
+      {
+        "netclass": "Power",
+        "pattern": "VIN"
+      }
+    ]
   },
   "pcbnew": {
     "last_paths": {
