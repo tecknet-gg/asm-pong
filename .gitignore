@@ -19,3 +19,4 @@ config.mcc/
 test.X/
 pcb/pcb-backups/
 src/asm-pong.code-workspace
+pcb/fp-info-cache
