@@ -372,10 +372,44 @@ psect code, class=CODE, space=0, delta=2
     clamp_high:
         movlw 58
         return
+
+    check_walls:
+        call check_top
+        call check_bottom
+        return
+
+    check_top:
+        btfsc dir, 1
+        return ; skip collision if moving down
+        movlw 0
+        subwf yF, W
+        btfsc STATUS, Z
+        call top_bounce
+        return
+        ;undeflow logic? check if it hits 255 (or above 128)
+
+    check_bottom:
+        btfss dir, 1
+        return ; skip collision if moving up
+        movlw 63
+        subwf yF, W
+        btfss STATUS, C
+        return
+        call bottom_bounce
+        return
     
-
-
-
+    top_bounce:
+        bsf dir, 1
+        movlw 0
+        movwf yF ; clamp yF to 0
+        return
+        
+    bottom_bounce:
+        bcf dir, 1
+        movlw 63
+        movwf yF ; clamp yF to 63
+        return
+            
 
 ;****************************************** STARTUP ******************************************
 
@@ -395,8 +429,6 @@ start:
     ;x2 = 126 - paddle 2px wide
     ;paddle is 11 px tall
         
-
-
 ;***************************************** MAIN LOOP *****************************************
 
 main:
@@ -409,6 +441,13 @@ main:
 physics_loop:
     call update_ball
     ;all wall_collisions
+
+
+
+
+
+
+
     ;all paddle_collisions
 
     decfsz substeps, F
