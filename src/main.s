@@ -1,5 +1,5 @@
 
-;***************************************** CONFIG *****************************************
+;***************************************** CONFIG *******************************************
 
 PROCESSOR 16F18346
 
@@ -33,12 +33,12 @@ CONFIG CPD = OFF
 
 #include <xc.inc>
 
-;************************************** REGISTER BITS *************************************
+;************************************** REGISTER BITS ***************************************
 
 C equ 0x00 ; carry 
 Z equ 0x02 ; zero
 
-;***************************************** VECTORS *****************************************
+;***************************************** VECTORS ******************************************
 
 
 ;RESET VECTOR
@@ -58,26 +58,27 @@ org 0x0004
 psect common, class=COMMON, space=1; pg(30, 47sg). ds reserves 1 byte. COMMON has 16 bytes accessible independent of banks. space=1 - RAM space=0 - ROM
 
     y1: ds 1 ;y of paddle 1
-    y2: ds 1; y of paddle 2
+    y2: ds 1 ; y of paddle 2
 
-    xF: ds 1; full x pixel of the ball
-    yF: ds 1; full y pixel of the ball
+    xF: ds 1 ; full x pixel of the ball
+    yF: ds 1 ; full y pixel of the ball
 
-    xS: ds 1; x subpixel of the ball
-    yS: ds 1; y subpixel of the ball
+    xS: ds 1 ; x subpixel of the ball
+    yS: ds 1 ; y subpixel of the ball
 
-    dir: ds 1; bit0 - x direction (0=left, 1=right), bit1 - y direction (0=up, 1=down)
+    dir: ds 1 ; bit0 - x direction (0=left, 1=right), bit1 - y direction (0=up, 1=down)
 
-    xVelS: ds 1; x velocity subpixel of the ball
-    yVelS: ds 1; y velocity subpixel of the ball
+    xVelS: ds 1 ; x velocity subpixel of the ball
+    yVelS: ds 1 ; y velocity subpixel of the ball
 
-    s1: ds 1; score of player 1
-    s2: ds 1; score of player 2
+    s1: ds 1 ; score of player 1
+    s2: ds 1 ; score of player 2
 
-    yTemp: ds 1;
-    substeps: ds 1; sub step counter
+    yTemp: ds 1 ;
+    substeps: ds 1 ; sub step counter
 
-
+    diff: ds 1 ; difference between paddle - ball
+    temp: ds 1 ; temp register
 
 psect bank0, class=BANK0, space=1 
 
@@ -89,10 +90,10 @@ psect bank0, class=BANK0, space=1
 
 
 
-;***************************************** SUBROUTINES *****************************************
-
+;***************************************** SUBROUTINES ***************************************
 
 psect code, class=CODE, space=0, delta=2
+;******************************************** WAIT *******************************************
     wait125us:
         movlw 199
         banksel WAIT125
@@ -145,8 +146,7 @@ psect code, class=CODE, space=0, delta=2
             decfsz WAIT1000, F ;1
             goto loop1000ms; 2
         return; 2
-
-
+;******************************************** SETUP ******************************************
     set_frq:
         banksel OSCFRQ
         movlw 0110B
@@ -221,7 +221,25 @@ psect code, class=CODE, space=0, delta=2
         movlw 32; set y1 and y2 of the paddles to 32
         movwf y1
         movwf y2
+    reset_ball:
+        movlw 64
+        movwf xF ; set x coordinate
+    
+        movlw 32
+        movwf yF ; set y coordinate
 
+        clrf xS ; clear the sub pixel values
+        clrf yS
+
+        movlw 192
+        movwf xVelS
+        movlw 0
+        movwf yVelS
+
+        movlw 0b00000011 
+        movwf dir
+        return
+;******************************************** ADC ********************************************
     read_paddle1:
         banksel ADCON0
         movlw 0b00010001 ; select RA4 as input channel (pg241)
@@ -250,7 +268,7 @@ psect code, class=CODE, space=0, delta=2
         movf ADRESH, W; get the 8 upper bits
         return
 
-
+;******************************************** SCORE ******************************************
     check_score:
         banksel s1
         movf s1, W
@@ -266,25 +284,7 @@ psect code, class=CODE, space=0, delta=2
 
         return
 
-    reset_ball:
-        movlw 64
-        movwf xF ; set x coordinate
-    
-        movlw 32
-        movwf yF ; set y coordinate
-
-        clrf xS ; clear the sub pixel values
-        clrf yS
-
-        movlw 192
-        movwf xVelS
-        movlw 0
-        movwf yVelS
-
-        movlw 0b00000011 
-        movwf dir
-        return
-
+;******************************************** BALL *******************************************
     update_ball:
         btfsc dir, 0 ; 0 - left, 1 - right
         goto ball_right
@@ -325,6 +325,7 @@ psect code, class=CODE, space=0, delta=2
         incf yF, F
         return
 
+;************************************* PADDLE ADC ********************************************
     update_paddle1:
         call read_paddle1
         
@@ -350,7 +351,6 @@ psect code, class=CODE, space=0, delta=2
         lsrf yTemp, F ; right shift
         lsrf yTemp, F ; right shift
         return
-    
     clamp:
         movlw 5
         subwf yTemp, W 
@@ -373,6 +373,7 @@ psect code, class=CODE, space=0, delta=2
         movlw 58
         return
 
+    ;*********************************  COLLISION ********************************************
     check_walls:
         call check_top
         call check_bottom
@@ -409,12 +410,153 @@ psect code, class=CODE, space=0, delta=2
         movlw 63
         movwf yF ; clamp yF to 63
         return
-    
+
     paddle1_collision:
+        btfsc dir, 0 ; 0 = left
+        return ; return if moving right
+        
+        movlw 3
+        xorwf xF, W
+        btfss STATUS, Z ; 1 = equal
         return
+
+        movf y1, W ; W = yF - y1
+        subwf yF, W  ; calculate difference and store in working
+
+        btfsc STATUS, Z ; yF == y1 (center)
+        goto middle_paddle1
+
+        btfss STATUS, C
+        goto top_paddle1
+        goto bottom_paddle1
+
+    top_paddle1:
+        
+        movf yF, W ;convert value to positive
+        subwf y1, W
     
-    paddle2_collision:
+        movwf diff
+        sublw 5
+        btfss STATUS, C ; diff>5, carry=0, ball missed
         return
+
+        bsf dir, 0
+        bcf dir, 1
+
+        movlw 3
+        movwf xF ; clamp ball to coordinate of 3
+
+        movf diff, W ; pass distance to the router
+        goto offset_router
+
+    middle_paddle1:
+        bsf dir, 0
+        
+        movlw 3
+        movwf xF ; clamp to coordinate 3
+        
+        clrf yVelS ; set y velocity to zero
+        return
+
+    bottom_paddle1:
+        movwf diff
+        sublw 5 ; 
+
+        btfss STATUS, C ; if diff > 5, carry = 0, ball missed
+        return
+
+        bsf dir, 0
+        bsf dir, 1
+
+        movlw 3
+        movwf xF
+        movf diff, W
+        goto offset_router
+
+
+    paddle2_collision:
+        btfss dir, 0 ; 0 = left
+        return ; return if moving right
+        
+        movlw 124
+        xorwf xF, W
+        btfss STATUS, Z ; 1 = equal
+        return
+
+        movf y2, W ; W = yF - y2
+        subwf yF, W  ; calculate difference and store in working
+
+        btfsc STATUS, Z ; yF == y2 (center)
+        goto middle_paddle2
+
+        btfss STATUS, C
+        goto top_paddle2
+        goto bottom_paddle2
+
+    top_paddle2:
+        
+        movf yF, W
+        subwf y2, W ; converting to positive
+    
+        movwf diff
+        sublw 5
+        btfss STATUS, C ; diff>5, carry=0, ball missed
+        return
+
+        bcf dir, 0
+        bcf dir, 1
+
+        movlw 124
+        movwf xF ; clamp ball to coordinate of 124
+
+        movf diff, W ; pass distance to the router
+        goto offset_router
+
+    middle_paddle2:
+        bcf dir, 0
+        
+        movlw 124
+        movwf xF ; clamp to coordinate 124
+        
+        clrf yVelS ; set y velocity to zero
+        return
+
+    bottom_paddle2:
+        movwf diff
+        sublw 5 ; 5 - diff (if underflows, 5 - diff will overflow)
+
+        btfss STATUS, C ; if diff > 5, carry = 0, ball missed
+        return
+
+        bcf dir, 0
+        bsf dir, 1
+
+        movlw 124
+        movwf xF
+        movf diff, W
+        goto offset_router
+    
+
+    offset_router:
+        movwf temp
+        
+        decf temp, F
+        btfsc STATUS, Z
+        goto offset_1
+
+        decf temp, F
+        btfsc STATUS, Z
+        goto offset_2
+
+        decf temp, F
+        btfsc STATUS, Z
+        goto offset_3
+
+        decf temp, F
+        btfsc STATUS, Z
+        goto offset_4
+
+        goto offset_5
 
     offset_0:
         clrf yVelS
@@ -481,7 +623,6 @@ psect code, class=CODE, space=0, delta=2
         movwf yVelS
         return
 
-        
     offset_4:
         movf xVelS, W
         movwf yVelS
@@ -509,11 +650,6 @@ psect code, class=CODE, space=0, delta=2
         addwf yVelS, F ; 1+3/4 ~ 1.73 = 60º
         return
 
-
-
-        
-
-        
 ;****************************************** STARTUP ******************************************
 
 start:
@@ -546,9 +682,14 @@ main:
 
 physics_loop:
     call update_ball
+    
     call check_walls
-    ;all paddle_collisions
+    
+    call paddle1_collision
+    call paddle2_collision
+
     decfsz substeps, F
+    
     goto physics_loop
     goto main
 
