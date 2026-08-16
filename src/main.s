@@ -409,8 +409,111 @@ psect code, class=CODE, space=0, delta=2
         movlw 63
         movwf yF ; clamp yF to 63
         return
-            
+    
+    paddle1_collision:
+        return
+    
+    paddle2_collision:
+        return
 
+    offset_0:
+        clrf yVelS
+        return
+
+    offset_1:
+        movf xVelS, W
+        movwf yVelS ; move xVelS into yVelS
+        
+        lsrf yVelS, F ; divide by 4 (1/4)
+        lsrf yVelS, F
+        movf yVelS, W
+        movwf yTemp
+
+        lsrf yVelS, F ; divide by 32 (1/32)
+        lsrf yVelS, F
+        lsrf yVelS, F
+
+        movf yVelS, W
+        subwf yTemp, W ; 1/4 - 1/32 ~ 0.2 = 12º
+        movwf yVelS
+        return
+    
+    offset_2:
+        movf xVelS, W
+        movwf yVelS
+
+        lsrf yVelS, F ; divide by 2 (1/2)
+        movf yVelS, W
+        movwf yTemp
+
+        lsrf yVelS, F ; divide by 16 (1/16)
+        lsrf yVelS, F
+        lsrf yVelS, F
+
+        movf yVelS, W
+        subwf yTemp, W ; 1/2 - 1/16 ~ 0.45 = 24º
+        movwf yVelS
+        return
+
+    offset_3:
+        movf xVelS, W
+        movwf yVelS
+
+        lsrf yVelS, F ; divide by 2 (1/2)
+        movf yVelS, W ; store 1/2 xVelS in working
+        lsrf yVelS, F ; divided by 4 (1/4)
+        addwf yVelS, F ; 1/2 + 1/4 = 3/4
+
+        movf yVelS, W
+        movwf yTemp ; yTemp storing 3/4 xVelS
+
+        movf xVelS, W
+        movwf yVelS
+
+        lsrf yVelS, F ;divide by 32 (1/32)
+        lsrf yVelS, F
+        lsrf yVelS, F
+        lsrf yVelS, F
+        lsrf yVelS, F
+
+        movf yVelS, W ; move 1/32 into working
+        subwf yTemp, W ; 1/32 - 3/4 ~ 0.72 = 36º
+        movwf yVelS
+        return
+
+        
+    offset_4:
+        movf xVelS, W
+        movwf yVelS
+
+        lsrf yVelS, F ; divide by 8 (1/8)
+        lsrf yVelS, F
+        lsrf yVelS, F
+
+        movf xVelS, W
+        addwf yVelS, F ; 1 + 1/8 ~ 1.1 = 48º
+        return
+    
+    offset_5:
+        movf xVelS, W
+        movwf yVelS
+
+        lsrf yVelS, F ; divide by 2 (1/2)
+        movf yVelS, W ; store in working
+
+        movf yVelS, W
+        lsrf yVelS, F ; divide by 4 (1/4)
+        addwf yVelS, F ; 1/2 + 1/4 = 3/4 xVelS
+
+        movf xVelS, W
+        addwf yVelS, F ; 1+3/4 ~ 1.73 = 60º
+        return
+
+
+
+        
+
+        
 ;****************************************** STARTUP ******************************************
 
 start:
@@ -432,6 +535,9 @@ start:
 ;***************************************** MAIN LOOP *****************************************
 
 main:
+    movlw 2 ;
+    movwf substeps
+
     call update_paddle1
     call update_paddle2
 
@@ -440,21 +546,10 @@ main:
 
 physics_loop:
     call update_ball
-    ;all wall_collisions
-
-
-
-
-
-
-
+    call check_walls
     ;all paddle_collisions
-
     decfsz substeps, F
     goto physics_loop
-
-    ;
-
     goto main
 
 ;**************************************** INTERRUPTS *****************************************
