@@ -38,6 +38,10 @@ CONFIG CPD = OFF
 C equ 0x00 ; carry 
 Z equ 0x02 ; zero
 
+;**************************************** CONSTANTS *****************************************
+
+T equ 6 ; set collision threshold for speed increment to 6
+
 ;***************************************** VECTORS ******************************************
 
 
@@ -71,23 +75,31 @@ psect common, class=COMMON, space=1; pg(30, 47sg). ds reserves 1 byte. COMMON ha
     xVelS: ds 1 ; x velocity subpixel of the ball
     yVelS: ds 1 ; y velocity subpixel of the ball
 
-    s1: ds 1 ; score of player 1
-    s2: ds 1 ; score of player 2
-
     yTemp: ds 1 ;
     substeps: ds 1 ; sub step counter
+    substep_speed: ds 1 ; sub step speed register
 
     diff: ds 1 ; difference between paddle - ball
     temp: ds 1 ; temp register
 
+    collisions: ds 1 ; counts numbe of collisions for speed increments
+
+    ;score: ds 1 ; bit 0 -> 3 - player 1, bit 4 -> 7 - player 2 worth it or not? 
+
+    
+
+    ;15/16 common bytes used :]
+
 psect bank0, class=BANK0, space=1 
 
-    WAIT1: ds 1
+    WAIT1: ds 1 ; wait counters
     WAIT125: ds 1
     WAIT10: ds 1
     WAIT100: ds 1
     WAIT1000: ds 1
 
+    s1: ds 1 ; score of player 1
+    s2: ds 1 ; score of player 2
 
 
 ;***************************************** SUBROUTINES ***************************************
@@ -231,13 +243,20 @@ psect code, class=CODE, space=0, delta=2
         clrf xS ; clear the sub pixel values
         clrf yS
 
-        movlw 192
+        movlw 2
+        movwf substep_speed
+        
+
+        movlw 64
         movwf xVelS
         movlw 0
         movwf yVelS
 
         movlw 0b00000011 
         movwf dir
+
+        movlw 0
+        movwf collisions ; set collisions to zero
         return
 ;******************************************** ADC ********************************************
     read_paddle1:
@@ -318,12 +337,70 @@ psect code, class=CODE, space=0, delta=2
         return
 
     ball_down:
-
         movf yVelS, W
         addwf yS, F
         btfsc STATUS, C ; did it overflow?
         incf yF, F
         return
+
+    check_collisions:
+        
+        incf collisions, F ; update collision count    
+
+        movlw T ; load threhold
+        xorwf collisions, W ; check if number of collisions is equal to threshold
+        btfss STATUS, Z
+        return
+        
+        clrf collisions
+        call increment_velocity ; if equal to threshold, increment speed, otherwise return
+        return
+
+    increment_velocity:
+        movlw 2 ; check substep speed
+        xorwf substep_speed, W
+        btfsc STATUS, Z
+        goto ramp_2 ; if 2 substeps, use the substep 2 ramp
+        goto ramp_3 ; if 3 substeps, use the substep 3 ramp
+        
+    ramp_2:
+        movlw 224
+        xorwf xVelS, W ; check if max speed reached for 2 substeps
+        btfsc STATUS, Z
+        goto transition_3 ; if so, transition to 3 substeps
+
+        movlw 32 ; otherwise add 32 to speed
+        addwf xVelS, F
+        return
+
+    transition_3:
+        movlw 3
+        movwf substep_speed
+        movlw 170
+        movwf xVelS
+        return
+
+    ramp_3:
+        movlw 255
+        xorwf xVelS, W
+        btfsc STATUS, Z
+        return
+
+        movlw 22 ; increment by 22 instead of 32
+        addwf xVelS, F
+
+        btfss STATUS, C
+        return ; if no carry occured we didn't overflow and become slow
+
+        movlw 255
+        movwf xVelS
+        return
+
+        movlw 255
+        movwf xVelS
+
+        return
+    
 
 ;************************************* PADDLE ADC ********************************************
     update_paddle1:
@@ -373,7 +450,7 @@ psect code, class=CODE, space=0, delta=2
         movlw 58
         return
 
-    ;*********************************  COLLISION ********************************************
+;************************************  COLLISION *********************************************
     check_walls:
         call check_top
         call check_bottom
@@ -421,17 +498,16 @@ psect code, class=CODE, space=0, delta=2
         return
 
         movf y1, W ; W = yF - y1
-        subwf yF, W  ; calculate difference and store in working
-
+        subwf yF, W  ; calculate difference and store in working        
+        
         btfsc STATUS, Z ; yF == y1 (center)
         goto middle_paddle1
-
         btfss STATUS, C
         goto top_paddle1
         goto bottom_paddle1
+        
 
     top_paddle1:
-        
         movf yF, W ;convert value to positive
         subwf y1, W
     
@@ -445,6 +521,8 @@ psect code, class=CODE, space=0, delta=2
 
         movlw 3
         movwf xF ; clamp ball to coordinate of 3
+        
+        call check_collisions
 
         movf diff, W ; pass distance to the router
         goto offset_router
@@ -454,7 +532,9 @@ psect code, class=CODE, space=0, delta=2
         
         movlw 3
         movwf xF ; clamp to coordinate 3
-        
+
+        call check_collisions
+
         clrf yVelS ; set y velocity to zero
         return
 
@@ -470,6 +550,9 @@ psect code, class=CODE, space=0, delta=2
 
         movlw 3
         movwf xF
+
+        call check_collisions
+
         movf diff, W
         goto offset_router
 
@@ -509,6 +592,8 @@ psect code, class=CODE, space=0, delta=2
         movlw 124
         movwf xF ; clamp ball to coordinate of 124
 
+        call check_collisions
+
         movf diff, W ; pass distance to the router
         goto offset_router
 
@@ -517,6 +602,8 @@ psect code, class=CODE, space=0, delta=2
         
         movlw 124
         movwf xF ; clamp to coordinate 124
+
+        call check_collisions
         
         clrf yVelS ; set y velocity to zero
         return
@@ -533,6 +620,9 @@ psect code, class=CODE, space=0, delta=2
 
         movlw 124
         movwf xF
+
+        call check_collisions
+
         movf diff, W
         goto offset_router
     
@@ -540,7 +630,7 @@ psect code, class=CODE, space=0, delta=2
     offset_router:
         movwf temp
         
-        decf temp, F
+        decf temp, F ; decrement difference, if equal to zero, route offset 1, if diff > 1, move onto next decrement check cycle
         btfsc STATUS, Z
         goto offset_1
 
@@ -555,7 +645,6 @@ psect code, class=CODE, space=0, delta=2
         decf temp, F
         btfsc STATUS, Z
         goto offset_4
-
         goto offset_5
 
     offset_0:
@@ -661,9 +750,6 @@ start:
     call reset_paddles
     call reset_ball
 
-    movlw 2 ;two updates per frame
-    movwf substeps
-
     ;x1 = 1 - paddle 2px wide
     ;x2 = 126 - paddle 2px wide
     ;paddle is 11 px tall
@@ -671,16 +757,15 @@ start:
 ;***************************************** MAIN LOOP *****************************************
 
 main:
-    movlw 2 ;
+    movf substep_speed, W ; load substep_speed into substep counter
     movwf substeps
-
-    call update_paddle1
-    call update_paddle2
-
     goto physics_loop
 
 
 physics_loop:
+    call update_paddle1
+    call update_paddle2
+
     call update_ball
     
     call check_walls
