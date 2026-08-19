@@ -44,7 +44,6 @@ T equ 6 ; set collision threshold for speed increment to 6
 
 ;***************************************** VECTORS ******************************************
 
-
 ;RESET VECTOR
 psect resetVec, class=CODE, space=0, delta=2, abs
 org 0x0000
@@ -233,7 +232,7 @@ psect code, class=CODE, space=0, delta=2
         movlw 32; set y1 and y2 of the paddles to 32
         movwf y1
         movwf y2
-    reset_ball:
+    full_reset_ball:
         movlw 64
         movwf xF ; set x coordinate
     
@@ -258,7 +257,42 @@ psect code, class=CODE, space=0, delta=2
         movlw 0
         movwf collisions ; set collisions to zero
         return
-;******************************************** ADC ********************************************
+
+    reset_ball: ; retain direction data
+        movlw 64
+        movwf xF
+
+        movlw 32
+        movwf yF
+
+        clrf xS
+        clrf yS
+
+        movlw 2 
+        movwf substep_speed
+
+        movlw 64
+        movwf xVelS
+        movlw 0
+        movwf yVelS
+
+        movlw 0
+        movwf collisions
+        return
+    clear_scores:
+        banksel s1
+        clrf s1
+        clrf s2
+        return
+    
+    clear_registers: ; clear other miscellaneous registers
+        clrf yTemp
+        clrf substeps
+        clrf diff
+        clrf temp
+
+
+;***************************************** ADC ***********************************************
     read_paddle1:
         banksel ADCON0
         movlw 0b00010001 ; select RA4 as input channel (pg241)
@@ -287,7 +321,7 @@ psect code, class=CODE, space=0, delta=2
         movf ADRESH, W; get the 8 upper bits
         return
 
-;******************************************** SCORE ******************************************
+;**************************************** SCORE ***********************************************
     check_score:
         banksel s1
         movf s1, W
@@ -303,7 +337,35 @@ psect code, class=CODE, space=0, delta=2
 
         return
 
-;******************************************** BALL *******************************************
+    increment_score1: ; increments score 1 by .... 1
+        banksel s1
+        incf s1, F
+        return
+
+    increment_score2: ; increments score 2 by .... 1
+        banksel s2
+        incf s2, F
+        return
+
+    p1_scores:
+        call increment_score1
+        call reset_ball
+        bcf dir, 0 ; point towards paddle one
+        ; round reset game
+        return
+    p2_scores:
+        call increment_score2
+        bsf dir, 0 ; point towards paddle 2
+        ; round reset game
+        return
+;**************************************** GAME ************************************************
+    round_reset:
+        return
+    
+    
+
+
+;**************************************** BALL ************************************************
     update_ball:
         btfsc dir, 0 ; 0 - left, 1 - right
         goto ball_right
@@ -402,7 +464,7 @@ psect code, class=CODE, space=0, delta=2
         return
     
 
-;************************************* PADDLE ADC ********************************************
+;************************************** PADDLE ADC ********************************************
     update_paddle1:
         call read_paddle1
         
@@ -450,7 +512,7 @@ psect code, class=CODE, space=0, delta=2
         movlw 58
         return
 
-;************************************  COLLISION *********************************************
+;*************************************  COLLISION *********************************************
     check_walls:
         call check_top
         call check_bottom
@@ -739,16 +801,53 @@ psect code, class=CODE, space=0, delta=2
         addwf yVelS, F ; 1+3/4 ~ 1.73 = 60º
         return
 
-;****************************************** STARTUP ******************************************
+    check_backwalls:
+        call check_backwall1
+        call check_backwall2
+        return
+    
+    check_backwall1:
+        movlw 0
+        xorwf xF, W 
+        btfsc STATUS, Z ;if set, xF == 0, so scores
+        goto p2_scores
 
+        btfsc xF, 7 
+        goto p2_scores ; just in case it underflows 0 -> 255
+        return
+    
+    check_backwall2:
+        movlw 127
+        subwf xF, W ; (xF - 127)>=0
+        btfsc STATUS, C  ; if set, no borrow, so xF>=127
+        goto p1_scores
+        return 
+
+
+
+;*************************************** SCREEN **********************************************
+    render_frame:
+        return
+
+;**************************************** STARTUP ********************************************
 start:
     call set_frq
     call setup_ports
     call setup_pps
     call setup_adc
-
     call reset_paddles
-    call reset_ball
+    call full_reset_ball
+    call clear_scores
+    call clear_registers
+    
+    call wait1000ms ;wait
+    ; wait for start button
+    ; say starting
+    ; wait 1s after start hit
+
+
+
+    goto main
 
     ;x1 = 1 - paddle 2px wide
     ;x2 = 126 - paddle 2px wide
@@ -763,6 +862,7 @@ main:
 
 
 physics_loop:
+    call check_score
     call update_paddle1
     call update_paddle2
 
@@ -772,6 +872,8 @@ physics_loop:
     
     call paddle1_collision
     call paddle2_collision
+
+    call check_backwalls
 
     decfsz substeps, F
     
