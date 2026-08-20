@@ -41,6 +41,8 @@ Z equ 0x02 ; zero
 ;**************************************** CONSTANTS *****************************************
 
 T equ 6 ; set collision threshold for speed increment to 6
+DC equ 6 ; DC on SPI screen
+CS equ 5 ; CS on SPI screen
 
 ;***************************************** VECTORS ******************************************
 
@@ -191,8 +193,8 @@ psect code, class=CODE, space=0, delta=2
     setup_pps:
 
         banksel LATC
-        movlw 0b10100000 ; 
-        movwf LATC ; Latching RC7 (RESET - active low) and RC5 (CS - chip select) to HIGH
+        movlw 0b11100000 ; 
+        movwf LATC ; Latching RC7 (RESET - active low), RC6(DC - direct command) and RC5 (CS - chip select) to HIGH
 
         bcf INTCON, 7 ; disable global interrupts (pg. 103)
         banksel PPSLOCK ;required sequence (pg.161)
@@ -362,9 +364,17 @@ psect code, class=CODE, space=0, delta=2
     round_reset:
         return
     
+    wait_start:
+        return
     
-
-
+    diplay_start:
+        return
+    
+    display_win1:
+        return
+    
+    display_win2:
+        return
 ;**************************************** BALL ************************************************
     update_ball:
         btfsc dir, 0 ; 0 - left, 1 - right
@@ -810,7 +820,7 @@ psect code, class=CODE, space=0, delta=2
         movlw 0
         xorwf xF, W 
         btfsc STATUS, Z ;if set, xF == 0, so scores
-        goto p2_scores
+        call p2_scores
 
         btfsc xF, 7 
         goto p2_scores ; just in case it underflows 0 -> 255
@@ -820,13 +830,61 @@ psect code, class=CODE, space=0, delta=2
         movlw 127
         subwf xF, W ; (xF - 127)>=0
         btfsc STATUS, C  ; if set, no borrow, so xF>=127
-        goto p1_scores
+        call p1_scores
         return 
-
-
 
 ;*************************************** SCREEN **********************************************
     render_frame:
+        return
+    
+    setup_spi:
+        ;left to defaults for the most part
+        banksel SSP1CON1 ; synchronous serial port, (pg 317)
+        ;bit 5 (SSPEN) = 1 enable serial port (pg 360)
+        ;3-0 (SSPM) = 0000 SPI Master mode, clock = FOSC (32) / 4 = 8MHz (pg 360)
+        ;rest of config bits as default (pg 317 - 5:0 bit reference)
+        movlw 0b00100000
+        movwf SSP1CON1
+
+        banksel SSP1STAT
+        ;bit 6 (CKE) = 1 - falling edge triggered (pg 359) 
+        ;bit 7 (SMP) = 0 - input data sampled at middle of data output (pg 359) 
+        movlw 0b01000000
+        movwf SSP1STAT
+
+    spi_send:
+        banksel SSP1BUF ; write byte to SPI Buffer from W
+        movwf SSP1BUF
+    
+    wait_spi:
+        banksel SSP1STAT
+        btfss SSP1STAT, 0
+        goto wait_spi
+        
+        banksel SSP1BUF, W
+        movf SSP1BUF, W
+        return
+
+    send_command:
+        banksel LATC ; write command from working to screen
+        bcf LATC, DC ; pull DC low to indicate command
+        bcf LATC, CS ; pull CS low to select screen
+        
+        call spi_send
+        
+        banksel LATC, CS
+        bsf LATC, CS ; pull CS high to end transfer
+        return
+    
+    send_data:
+        banksel LATC ; write pixel data to screen
+        bsf LATC, DC ; pull DC high to indicate data
+        bcf LATC, CS ; pull CS low to select screen
+
+        call spi_send
+
+        banksel LATC, CS
+        bsf LATC, CS
         return
 
 ;**************************************** STARTUP ********************************************
@@ -839,6 +897,8 @@ start:
     call full_reset_ball
     call clear_scores
     call clear_registers
+
+    call display_start
     
     call wait1000ms ;wait
     ; wait for start button
@@ -884,6 +944,7 @@ physics_loop:
 
 isr:
     retfie ;return from interrupt
+    ; have reset button call isr
 
 end
 
