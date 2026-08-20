@@ -41,8 +41,41 @@ Z equ 0x02 ; zero
 ;**************************************** CONSTANTS *****************************************
 
 T equ 6 ; set collision threshold for speed increment to 6
-DC equ 6 ; DC on SPI screen
-CS equ 5 ; CS on SPI screen
+
+;**************************************** SSD1306 *****************************************
+
+OLED_RS equ 7 ; RES on SPI screen
+OLED_DC equ 6 ; DC on SPI screen
+OLED_CS equ 5 ; CS on SPI screen
+
+; SPI boot sequence - call each command in sequence using send_command
+; numeric description pertains to command number for specific config, as opposed to different config options or such
+
+OLED_OFF equ 0xAE ; turn display off
+CLK_DIV equ 0xD5
+CLK_FRQ equ 0x80
+OFFSET1 equ 0xD3
+OFFSET2 equ 0x00
+START_LINE equ 0x40
+ENA_CPUMP1 equ 0x8D
+ENA_CPUMP2 equ 0x14
+SET_HORIZ1 equ 0x20
+SET_HORIZ2 equ 0x00
+REMAP equ 0xA1
+SET_COM equ 0xC8 
+SET_COM_CONFIG1 equ 0xDA
+SET_COM_CONFIG2 equ 0x12 ; 128x64
+SET_CONT1 equ 0x81
+SET_CONT2 equ 0xCF 
+SET_PREC1 equ 0xD9
+SET_PREC2 equ 0xF1
+SET_VCOMH1 equ 0xDB 
+SET_VCOMH2 equ 0x40
+RES_RAM equ 0xA4
+SET_NORM equ 0xA6
+OLED_ON equ 0xAF ; turn display on
+
+
 
 ;***************************************** VECTORS ******************************************
 
@@ -840,7 +873,7 @@ psect code, class=CODE, space=0, delta=2
     setup_spi:
         ;left to defaults for the most part
         banksel SSP1CON1 ; synchronous serial port, (pg 317)
-        ;bit 5 (SSPEN) = 1 enable serial port (pg 360)
+        ; bit 5 (SSPEN) = 1 enable serial port (pg 360)
         ;3-0 (SSPM) = 0000 SPI Master mode, clock = FOSC (32) / 4 = 8MHz (pg 360)
         ;rest of config bits as default (pg 317 - 5:0 bit reference)
         movlw 0b00100000
@@ -851,6 +884,7 @@ psect code, class=CODE, space=0, delta=2
         ;bit 7 (SMP) = 0 - input data sampled at middle of data output (pg 359) 
         movlw 0b01000000
         movwf SSP1STAT
+        return
 
     spi_send:
         banksel SSP1BUF ; write byte to SPI Buffer from W
@@ -861,31 +895,107 @@ psect code, class=CODE, space=0, delta=2
         btfss SSP1STAT, 0
         goto wait_spi
         
-        banksel SSP1BUF, W
+        banksel SSP1BUF
         movf SSP1BUF, W
         return
 
     send_command:
         banksel LATC ; write command from working to screen
-        bcf LATC, DC ; pull DC low to indicate command
-        bcf LATC, CS ; pull CS low to select screen
+        bcf LATC, OLED_DC; pull DC low to indicate command
+        bcf LATC, OLED_CS ; pull CS low to select screen
         
         call spi_send
         
-        banksel LATC, CS
-        bsf LATC, CS ; pull CS high to end transfer
+        banksel LATC
+        bsf LATC, OLED_CS ; pull CS high to end transfer
         return
     
     send_data:
         banksel LATC ; write pixel data to screen
-        bsf LATC, DC ; pull DC high to indicate data
-        bcf LATC, CS ; pull CS low to select screen
+        bsf LATC, OLED_DC; pull DC high to indicate data
+        bcf LATC, OLED_CS ; pull CS low to select screen
 
         call spi_send
 
-        banksel LATC, CS
-        bsf LATC, CS
+        banksel LATC
+        bsf LATC, OLED_CS
         return
+
+    boot_sequence:
+        banksel LATC ;
+        
+        bcf LATC, OLED_RS ; enable reset
+        call wait10ms
+        bsf LATC, OLED_RS ; disable reset
+
+        movlw OLED_OFF
+        call send_command
+
+        movlw CLK_DIV
+        call send_command
+
+        movlw CLK_FRQ
+        call send_command
+
+        movlw OFFSET1 
+        call send_command
+
+        movlw OFFSET2
+        call send_command
+
+        movlw START_LINE
+        call send_command
+
+        movlw ENA_CPUMP1
+        call send_command
+
+        movlw ENA_CPUMP2
+        call send_command
+
+        movlw SET_HORIZ1 
+        call send_command
+
+        movlw SET_HORIZ2
+        call send_command
+
+        movlw REMAP
+        call send_command
+
+        movlw SET_COM
+        call send_command
+
+        movlw SET_COM_CONFIG1 
+        call send_command
+
+        movlw SET_COM_CONFIG2
+        call send_command
+
+        movlw SET_CONT1
+        call send_command
+
+        movlw SET_CONT2
+        call send_command
+
+        movlw SET_PREC1
+        call send_command
+
+        movlw SET_PREC2
+        call send_command
+
+        movlw SET_VCOMH1
+        call send_command
+
+        movlw SET_VCOMH2
+        call send_command
+
+        movlw RES_RAM
+        call send_command
+        
+        movlw SET_NORM
+        call send_command
+
+        movlw OLED_ON
+        call send_command
 
 ;**************************************** STARTUP ********************************************
 start:
@@ -898,7 +1008,7 @@ start:
     call clear_scores
     call clear_registers
 
-    call display_start
+    ;call display_start
     
     call wait1000ms ;wait
     ; wait for start button
