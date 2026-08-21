@@ -1059,7 +1059,7 @@ psect code, class=CODE, space=0, delta=2
         movlw 0b00000000 ; send empty byte
         call send_data
 
-        movf xF, W ; load nexw x value
+        movf xF, W ; load new x value
         movwf cursor_x
 
         movf yF, W
@@ -1072,10 +1072,10 @@ psect code, class=CODE, space=0, delta=2
         movf temp, W
         movwf cursor_page
         
-        call set_cursor ; set cursro with x and page
+        call set_cursor ; set cursor with x and page
 
         movf yF, W ; load y back into working
-        andlw 0b00000111 ; mod with 0b0111 - equivalent of mod 8 - gives you the position on that page
+        andlw 0b00000111 ; mod with 0b0111 (number & (2^n - 1)) - equivalent of mod 8 - gives you the position on that page
         call get_bitmask ; get the corresponding bitmask 
         call send_data
 
