@@ -141,6 +141,13 @@ psect bank0, class=BANK0, space=1
     cursor_page: ds 1 ; cursor page (0-7), each 8 bits tall
     cursor_x: ds 1 ; cursor x value (0-127)
 
+    old_y1: ds 1 ; old paddle 1 y 
+    old_y2: ds 1 ; old paddle 2 y
+
+    mask0: ds 1 ; paddle bit mask can take upto 3 individual byte segments (11 tall, each segment 8 bits) 
+    mask1: ds 1 
+    mask2: ds 1 
+
 
 ;***************************************** SUBROUTINES ***************************************
 
@@ -1079,13 +1086,166 @@ psect code, class=CODE, space=0, delta=2
         movwf old_yF
 
         return
+
+    calc_paddle:
+        movwf temp
+
+        banksel cursor_page
+        movwf cursor_page
+        lsrf cursor_page, F ; calculate start page (y1 or y2 / 8)
+        lsrf cursor_page, F
+        lsrf cursor_page, F
+
         
+        movf temp, W 
+        andlw 0b00000111 ; calculate offset by doing mod 8 
+        movwf temp ; temp holds required offset passes for shift_loop
+
+        movlw 0b11111111 ; default mask with zero offset. mask 0 is full, mask 1 has remaining three bytes, and mask 2 has no bytes. - 11111111 (mask 0), 111 (mask 1), 0 (mask 2)
+        banksel mask0
+        movwf mask0
+        
+        movlw 0b00000111
+        movwf mask1
+
+        clrf mask2
+
+        movf temp, F ; default mask if offset is zero
+        btfsc STATUS, Z
+        return
+
+        shift_loop:
+        ; decrement offset counter (temp) by shifting bits in mask to the left. 
+        bcf STATUS, C ; clear CARRY
+        banksel mask0
+        rlf mask0, F ; rotate left, MSB dropped into C
+        rlf mask1, F ; rotate left, C drops into LSB
+        rlf mask2, F ; rotate left, C drops into LSB
+        decfsz temp, F ; decrement till zero
+        goto shift_loop
+
+        return
+
+    erase_paddle:
+        ; set cursor_x store y in W
+        movwf temp
+            
+        banksel cursor_page
+        movwf cursor_page
+        lsrf cursor_page, F ; find page by dividing by 8 
+        lsrf cursor_page, F
+        lsrf cursor_page, F
+
+        call set_cursor
+        movlw 0b00000000
+        call send_data ; clear page 0
+        movlw 0b00000000
+        call send_data ; ssd1306 auto increments column address pointer
+
+        banksel cursor_page
+        incf cursor_page, F ; clear page 1
+        call set_cursor ; resets cursor to register value for cursor_x
+        movlw 0b00000000
+        call send_data
+        movlw 0b00000000
+        call send_data 
+
+        banksel cursor_page
+        incf cursor_page, F ; clear page 2
+        call set_cursor ; resets cursor to register value for cursor_x
+        movlw 0b00000000
+        call send_data
+        movlw 0b00000000 ; send data changes working
+        call send_data
+
+        return
+
+    draw_paddle:
+        call calc_paddle
+
+        
+        call set_cursor
+        banksel mask0 
+        movf mask0, W ; load mask0 
+        call send_data
+        banksel mask0 ; in case loaded out of bank
+        movf mask0, W
+        call send_data ; auto increments cursor column, drawing a two wide paddle
+
+        banksel cursor_page
+        incf cursor_page, F
+        call set_cursor ; increment page
+        banksel mask1
+        movf mask1, W ; load mask1
+        call send_data
+        banksel mask1
+        movf mask1, W
+        call send_data
+
+        banksel cursor_page
+        incf cursor_page, F
+        call set_cursor
+        banksel mask2
+        movf mask2, W; load mask2
+        call send_data
+        banksel mask2
+        movf mask2, W
+        call send_data
+
+        return
+
+    render_paddles:
+        banksel cursor_x
+        movlw 1
+        movwf cursor_x
+
+        banksel old_y1
+        movlw 5
+        subwf old_y1, W ; old_y1 - 5 (to move reference from center to top pixel)
+        call erase_paddle ; handles both columns
+
+        banksel y1
+        movlw 5
+        subwf y1, W ; y1 - 5 (to move reference from center to top pixel)
+        call draw_paddle
+
+        banksel y1
+        movf y1, W
+        banksel old_y1
+        movwf old_y1 ; cache used y coordinate to be erased later
+
+        banksel cursor_x
+        movlw 125
+        movwf cursor_x
+
+        banksel old_y2
+        movlw 5
+        subwf old_y1, W
+        call erase_paddle
+
+        banksel y2
+        movlw 5
+        subwf y1, W
+        call draw_paddle
+
+        banksel y2
+        movf y2, W
+        banksel old_y2
+        movwf old_y2
+
+        return
+
+    render_frame:
+        call render_ball
+        call render_paddles
+        return
 
 ;**************************************** STARTUP ********************************************
 start:
     call set_frq
     call setup_ports
     call setup_pps
+    call setup_spi
     call setup_adc
     call reset_paddles
     call full_reset_ball
@@ -1110,14 +1270,14 @@ start:
 main:
     movf substep_speed, W ; load substep_speed into substep counter
     movwf substeps
-    goto physics_loop
 
-
-physics_loop:
-    call check_score
     call update_paddle1
     call update_paddle2
 
+    goto physics_loop
+
+physics_loop:
+    call check_score
     call update_ball
     
     call check_walls
@@ -1126,6 +1286,8 @@ physics_loop:
     call paddle2_collision
 
     call check_backwalls
+
+    call render_frame ; render frame after each asset update
 
     decfsz substeps, F
     
