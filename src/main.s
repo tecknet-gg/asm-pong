@@ -59,8 +59,8 @@ OFFSET2 equ 0x00
 START_LINE equ 0x40
 ENA_CPUMP1 equ 0x8D
 ENA_CPUMP2 equ 0x14
-SET_HORIZ1 equ 0x20
-SET_HORIZ2 equ 0x00
+SET_ADDR_MODE equ 0x20
+PAGE_MODE equ 0x02
 REMAP equ 0xA1
 SET_COM equ 0xC8 
 SET_COM_CONFIG1 equ 0xDA
@@ -106,10 +106,10 @@ psect common, class=COMMON, space=1; pg(30, 47sg). ds reserves 1 byte. COMMON ha
 
     dir: ds 1 ; bit0 - x direction (0=left, 1=right), bit1 - y direction (0=up, 1=down)
 
-    xVelS: ds 1 ; x velocity subpixel of the ball
-    yVelS: ds 1 ; y velocity subpixel of the ball
+    x_vel: ds 1 ; x velocity subpixel of the ball
+    y_vel: ds 1 ; y velocity subpixel of the ball
 
-    yTemp: ds 1 ;
+    y_temp: ds 1 ;
     substeps: ds 1 ; sub step counter
     substep_speed: ds 1 ; sub step speed register
 
@@ -134,6 +134,12 @@ psect bank0, class=BANK0, space=1
 
     s1: ds 1 ; score of player 1
     s2: ds 1 ; score of player 2
+
+    old_xF: ds 1 ; old x pixel for ball
+    old_yF: ds 1 ; old y pixel for ball
+
+    cursor_page: ds 1 ; cursor page (0-7), each 8 bits tall
+    cursor_x: ds 1 ; cursor x value (0-127)
 
 
 ;***************************************** SUBROUTINES ***************************************
@@ -282,9 +288,9 @@ psect code, class=CODE, space=0, delta=2
         
 
         movlw 64
-        movwf xVelS
+        movwf x_vel
         movlw 0
-        movwf yVelS
+        movwf y_vel
 
         movlw 0b00000011 
         movwf dir
@@ -307,9 +313,9 @@ psect code, class=CODE, space=0, delta=2
         movwf substep_speed
 
         movlw 64
-        movwf xVelS
+        movwf x_vel
         movlw 0
-        movwf yVelS
+        movwf y_vel
 
         movlw 0
         movwf collisions
@@ -321,7 +327,7 @@ psect code, class=CODE, space=0, delta=2
         return
     
     clear_registers: ; clear other miscellaneous registers
-        clrf yTemp
+        clrf y_temp
         clrf substeps
         clrf diff
         clrf temp
@@ -415,14 +421,14 @@ psect code, class=CODE, space=0, delta=2
         goto ball_left
     
     ball_right:
-        movf xVelS, W
+        movf x_vel, W
         addwf xS, F
         btfsc STATUS, C ; did it overflow?
         incf xF, F
         goto update_y
 
     ball_left:
-        movf xVelS, W
+        movf x_vel, W
         subwf xS, F
         btfss STATUS, C ; did it carry?
         decf xF, F
@@ -435,14 +441,14 @@ psect code, class=CODE, space=0, delta=2
     
     ball_up:
 
-        movf yVelS, W
+        movf y_vel, W
         subwf yS, F
         btfss STATUS, C ; did it carry?
         decf yF, F
         return
 
     ball_down:
-        movf yVelS, W
+        movf y_vel, W
         addwf yS, F
         btfsc STATUS, C ; did it overflow?
         incf yF, F
@@ -470,39 +476,39 @@ psect code, class=CODE, space=0, delta=2
         
     ramp_2:
         movlw 224
-        xorwf xVelS, W ; check if max speed reached for 2 substeps
+        xorwf x_vel, W ; check if max speed reached for 2 substeps
         btfsc STATUS, Z
         goto transition_3 ; if so, transition to 3 substeps
 
         movlw 32 ; otherwise add 32 to speed
-        addwf xVelS, F
+        addwf x_vel, F
         return
 
     transition_3:
         movlw 3
         movwf substep_speed
         movlw 170
-        movwf xVelS
+        movwf x_vel
         return
 
     ramp_3:
         movlw 255
-        xorwf xVelS, W
+        xorwf x_vel, W
         btfsc STATUS, Z
         return
 
         movlw 22 ; increment by 22 instead of 32
-        addwf xVelS, F
+        addwf x_vel, F
 
         btfss STATUS, C
         return ; if no carry occured we didn't overflow and become slow
 
         movlw 255
-        movwf xVelS
+        movwf x_vel
         return
 
         movlw 255
-        movwf xVelS
+        movwf x_vel
 
         return
     
@@ -529,22 +535,22 @@ psect code, class=CODE, space=0, delta=2
         return
 
     scale_paddle:
-        movwf yTemp
-        lsrf yTemp, F ; right shift
-        lsrf yTemp, F ; right shift
+        movwf y_temp
+        lsrf y_temp, F ; right shift
+        lsrf y_temp, F ; right shift
         return
     clamp:
         movlw 5
-        subwf yTemp, W 
+        subwf y_temp, W 
         btfss STATUS, C
         goto clamp_low
 
         movlw 59
-        subwf yTemp, W
+        subwf y_temp, W
         btfsc STATUS, C
         goto clamp_high
     
-        movf yTemp, W
+        movf y_temp, W
         return
 
     clamp_low:
@@ -640,7 +646,7 @@ psect code, class=CODE, space=0, delta=2
 
         call check_collisions
 
-        clrf yVelS ; set y velocity to zero
+        clrf y_vel ; set y velocity to zero
         return
 
     bottom_paddle1:
@@ -710,7 +716,7 @@ psect code, class=CODE, space=0, delta=2
 
         call check_collisions
         
-        clrf yVelS ; set y velocity to zero
+        clrf y_vel ; set y velocity to zero
         return
 
     bottom_paddle2:
@@ -733,7 +739,7 @@ psect code, class=CODE, space=0, delta=2
     
 
     offset_router:
-        movwf temp
+        movwf temp ; replace with brw? 
         
         decf temp, F ; decrement difference, if equal to zero, route offset 1, if diff > 1, move onto next decrement check cycle
         btfsc STATUS, Z
@@ -753,95 +759,95 @@ psect code, class=CODE, space=0, delta=2
         goto offset_5
 
     offset_0:
-        clrf yVelS
+        clrf y_vel
         return
 
     offset_1:
-        movf xVelS, W
-        movwf yVelS ; move xVelS into yVelS
+        movf x_vel, W
+        movwf y_vel ; move x_vel into y_vel
         
-        lsrf yVelS, F ; divide by 4 (1/4)
-        lsrf yVelS, F
-        movf yVelS, W
-        movwf yTemp
+        lsrf y_vel, F ; divide by 4 (1/4)
+        lsrf y_vel, F
+        movf y_vel, W
+        movwf y_temp
 
-        lsrf yVelS, F ; divide by 32 (1/32)
-        lsrf yVelS, F
-        lsrf yVelS, F
+        lsrf y_vel, F ; divide by 32 (1/32)
+        lsrf y_vel, F
+        lsrf y_vel, F
 
-        movf yVelS, W
-        subwf yTemp, W ; 1/4 - 1/32 ~ 0.2 = 12º
-        movwf yVelS
+        movf y_vel, W
+        subwf y_temp, W ; 1/4 - 1/32 ~ 0.2 = 12º
+        movwf y_vel
         return
     
     offset_2:
-        movf xVelS, W
-        movwf yVelS
+        movf x_vel, W
+        movwf y_vel
 
-        lsrf yVelS, F ; divide by 2 (1/2)
-        movf yVelS, W
-        movwf yTemp
+        lsrf y_vel, F ; divide by 2 (1/2)
+        movf y_vel, W
+        movwf y_temp
 
-        lsrf yVelS, F ; divide by 16 (1/16)
-        lsrf yVelS, F
-        lsrf yVelS, F
+        lsrf y_vel, F ; divide by 16 (1/16)
+        lsrf y_vel, F
+        lsrf y_vel, F
 
-        movf yVelS, W
-        subwf yTemp, W ; 1/2 - 1/16 ~ 0.45 = 24º
-        movwf yVelS
+        movf y_vel, W
+        subwf y_temp, W ; 1/2 - 1/16 ~ 0.45 = 24º
+        movwf y_vel
         return
 
     offset_3:
-        movf xVelS, W
-        movwf yVelS
+        movf x_vel, W
+        movwf y_vel
 
-        lsrf yVelS, F ; divide by 2 (1/2)
-        movf yVelS, W ; store 1/2 xVelS in working
-        lsrf yVelS, F ; divided by 4 (1/4)
-        addwf yVelS, F ; 1/2 + 1/4 = 3/4
+        lsrf y_vel, F ; divide by 2 (1/2)
+        movf y_vel, W ; store 1/2 x_vel in working
+        lsrf y_vel, F ; divided by 4 (1/4)
+        addwf y_vel, F ; 1/2 + 1/4 = 3/4
 
-        movf yVelS, W
-        movwf yTemp ; yTemp storing 3/4 xVelS
+        movf y_vel, W
+        movwf y_temp ; y_temp storing 3/4 x_vel
 
-        movf xVelS, W
-        movwf yVelS
+        movf x_vel, W
+        movwf y_vel
 
-        lsrf yVelS, F ;divide by 32 (1/32)
-        lsrf yVelS, F
-        lsrf yVelS, F
-        lsrf yVelS, F
-        lsrf yVelS, F
+        lsrf y_vel, F ;divide by 32 (1/32)
+        lsrf y_vel, F
+        lsrf y_vel, F
+        lsrf y_vel, F
+        lsrf y_vel, F
 
-        movf yVelS, W ; move 1/32 into working
-        subwf yTemp, W ; 1/32 - 3/4 ~ 0.72 = 36º
-        movwf yVelS
+        movf y_vel, W ; move 1/32 into working
+        subwf y_temp, W ; 1/32 - 3/4 ~ 0.72 = 36º
+        movwf y_vel
         return
 
     offset_4:
-        movf xVelS, W
-        movwf yVelS
+        movf x_vel, W
+        movwf y_vel
 
-        lsrf yVelS, F ; divide by 8 (1/8)
-        lsrf yVelS, F
-        lsrf yVelS, F
+        lsrf y_vel, F ; divide by 8 (1/8)
+        lsrf y_vel, F
+        lsrf y_vel, F
 
-        movf xVelS, W
-        addwf yVelS, F ; 1 + 1/8 ~ 1.1 = 48º
+        movf x_vel, W
+        addwf y_vel, F ; 1 + 1/8 ~ 1.1 = 48º
         return
     
     offset_5:
-        movf xVelS, W
-        movwf yVelS
+        movf x_vel, W
+        movwf y_vel
 
-        lsrf yVelS, F ; divide by 2 (1/2)
-        movf yVelS, W ; store in working
+        lsrf y_vel, F ; divide by 2 (1/2)
+        movf y_vel, W ; store in working
 
-        movf yVelS, W
-        lsrf yVelS, F ; divide by 4 (1/4)
-        addwf yVelS, F ; 1/2 + 1/4 = 3/4 xVelS
+        movf y_vel, W
+        lsrf y_vel, F ; divide by 4 (1/4)
+        addwf y_vel, F ; 1/2 + 1/4 = 3/4 x_vel
 
-        movf xVelS, W
-        addwf yVelS, F ; 1+3/4 ~ 1.73 = 60º
+        movf x_vel, W
+        addwf y_vel, F ; 1+3/4 ~ 1.73 = 60º
         return
 
     check_backwalls:
@@ -867,9 +873,6 @@ psect code, class=CODE, space=0, delta=2
         return 
 
 ;*************************************** SCREEN **********************************************
-    render_frame:
-        return
-    
     setup_spi:
         ;left to defaults for the most part
         banksel SSP1CON1 ; synchronous serial port, (pg 317)
@@ -952,10 +955,10 @@ psect code, class=CODE, space=0, delta=2
         movlw ENA_CPUMP2
         call send_command
 
-        movlw SET_HORIZ1 
+        movlw SET_ADDR_MODE 
         call send_command
 
-        movlw SET_HORIZ2
+        movlw PAGE_MODE
         call send_command
 
         movlw REMAP
@@ -997,6 +1000,87 @@ psect code, class=CODE, space=0, delta=2
         movlw OLED_ON
         call send_command
 
+        return
+
+
+    set_cursor:
+        banksel cursor_page ; load cursor page (binary 0-7)
+        movf cursor_page, W ; to select a page, 0xB0 - 0xB7 
+        andlw 0b00000111 ; keep last three bits, and keeps the page data
+        iorlw 0xB0 ; combine with base cursor page command
+        call send_command ; send command to select page to screen
+
+        banksel cursor_x
+        movf cursor_x, W ; load bottom 4 bits for bottom column address
+        andlw 0b00001111 ; keep last 4 bits to address the bottom four bits of the x value
+        iorlw 0x00 ; combine with base command - redudnant = 0b00000000
+        call send_command
+
+        swapf cursor_x, W ; swap top 4 bits with bottom 4 bits for top column address
+        andlw 0b00001111 ; keep last 4 bits for top four bits of the column address
+        iorlw 0x01 ; combine with base command
+        call send_command
+        return
+    
+    get_bitmask: ; draw one pixel - ball
+        ;  pass in y coordinate mod 8  - tells which pixel to be turned on, i.e 7 says turn on bit 7. 
+        brw ; PC = PC + W - for example if PC = 3, skip to 3rd retlw
+        retlw 0b00000001
+        retlw 0b00000010
+        retlw 0b00000100
+        retlw 0b00001000
+        retlw 0b00010000
+        retlw 0b00100000
+        retlw 0b01000000
+        retlw 0b10000000
+
+    render_ball:
+        movf old_xF, W
+        movwf cursor_x ; move old x coordinate to cursor x - takes full 8 bits
+
+        movf old_yF, W
+        movwf temp ; move to temp
+
+        lsrf temp
+        lsrf temp
+        lsrf temp ; divide by 8 to get page
+        
+        movf temp, W
+        movwf cursor_page
+
+        call set_cursor ; set cursor with cursor_x and cursor_page
+        movlw 0b00000000 ; send empty byte
+        call send_data
+
+        movf xF, W ; load nexw x value
+        movwf cursor_x
+
+        movf yF, W
+        movwf temp
+        
+        lsrf temp
+        lsrf temp
+        lsrf temp ; divide by 8 to get page
+
+        movf temp, W
+        movwf cursor_page
+        
+        call set_cursor ; set cursro with x and page
+
+        movf yF, W ; load y back into working
+        andlw 0b00000111 ; mod with 0b0111 - equivalent of mod 8 - gives you the position on that page
+        call get_bitmask ; get the corresponding bitmask 
+        call send_data
+
+        movf xF, W ; cache coordinates to erase next cycle
+        movwf old_xF
+
+        movf yF, W
+        movwf old_yF
+
+        return
+        
+
 ;**************************************** STARTUP ********************************************
 start:
     call set_frq
@@ -1007,9 +1091,7 @@ start:
     call full_reset_ball
     call clear_scores
     call clear_registers
-
-    ;call display_start
-    
+    call boot_sequence    
     call wait1000ms ;wait
     ; wait for start button
     ; say starting
