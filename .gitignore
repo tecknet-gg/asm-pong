@@ -12,6 +12,7 @@ cmake/**/CMake*
 .DS_Store
 out/asm-pong/
 .vscode/
+.idea/
 
 .micropico
 
