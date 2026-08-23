@@ -522,7 +522,7 @@
       "gencad": "",
       "idf": "",
       "netlist": "",
-      "plot": "/Users/jeevan/Documents/asm-pong/pcb/gerber",
+      "plot": "../assets/",
       "pos_files": "",
       "specctra_dsn": "",
       "step": "",

@@ -59,8 +59,8 @@ OFFSET2 equ 0x00
 START_LINE equ 0x40
 ENA_CPUMP1 equ 0x8D
 ENA_CPUMP2 equ 0x14
-SET_ADDR_MODE equ 0x20
-PAGE_MODE equ 0x02
+SET_ADDR_MODE equ 0x20 ; ADDR mode
+PAGE_MODE equ 0x02 ; PAGE mode
 REMAP equ 0xA1
 SET_COM equ 0xC8 
 SET_COM_CONFIG1 equ 0xDA
@@ -74,6 +74,78 @@ SET_VCOMH2 equ 0x40
 RES_RAM equ 0xA4
 SET_NORM equ 0xA6
 OLED_ON equ 0xAF ; turn display on
+
+HORIZ_MODE equ 0x00
+
+;**************************************** Pixels ********************************************
+; Asset byte definitions - load page and x value and then pass bytes in sequentially
+; All assets fit on one page
+
+p_1 equ 0b01111100 ; Letter P - 3 wide
+p_2 equ 0b01010000
+p_3 equ 0b01110000
+
+o_1 equ 0b01111100 ; Letter O - 3 wide
+o_2 equ 0b01000100
+o_3 equ 0b01111100
+
+n_1 equ 0b01111100 ; Letter N - 4 wide ;-;
+n_2 equ 0b00110000
+n_3 equ 0b00001000
+n_4 equ 0b01111100
+
+g_1 equ 0b01111100 ; Letter G - 3 wide
+g_2 equ 0b01000100
+g_3 equ 0b01011100
+
+s_1 equ 0b01100100 ; Letter S - 3 wide
+s_2 equ 0b01010100
+s_3 equ 0b01011100
+
+t_1 equ 0b01000000 ; Letter T - 3 wide
+t_2 equ 0b01111100
+t_3 equ 0b01000000
+
+a_1 equ 0b01111100 ; Letter A - 3 wide
+a_2 equ 0b01010000
+a_3 equ 0b01111100 
+
+r_1 equ 0b01111100 ; Letter R - 3 wide
+r_2 equ 0b01011000
+r_3 equ 0b01110100
+
+e_1 equ 0b01111100 ; Letter E - 3 wide
+e_2 equ 0b01010100
+e_3 equ 0b01000100
+
+symbol_exc equ 0b01110100 ; Symbol ! - 1 wide
+
+arrow_left_1 equ 0b00010000 ; Left pointing arrow - 12 wide
+arrow_left_2 equ 0b00111000
+arrow_left_3 equ 0b01111100
+arrow_left_4_12 equ 0b00010000
+
+arrow_right_1_9 equ 0b00010000 ; Right pointing arrow - 12 wide
+arrow_right_10 equ 0b01111100
+arrow_right_11 equ 0b00111000
+arrow_right_12 equ 0b00010000
+
+number_1_1 equ 0b00100100 ; Number 1 - 3 wide
+number_1_2 equ 0b01111100
+number_1_3 equ 0b00000100
+
+number_2_1 equ 0b01011100 ; Number 2 - 3 wide
+number_2_2 equ 0b01010100
+number_2_3 equ 0b01110100
+
+arrow_down_1 equ 0b00001000 ; Arrow down - 5 wide
+arrow_down_2 equ 0b00001100
+arrow_down_3 equ 0b11111110
+arrow_down_4 equ 0b00001100
+arrow_down_5 equ 0b00000010
+
+empty_byte equ 0b00000000 ; Empty byte to clear screen 
+
 
 
 
@@ -148,6 +220,9 @@ psect bank0, class=BANK0, space=1
     mask1: ds 1 
     mask2: ds 1 
 
+    page_counter: ds 1 ; page tracker for clear screen subroutine
+    x_counter: ds 1 
+ 
 
 ;***************************************** SUBROUTINES ***************************************
 
@@ -385,12 +460,12 @@ psect code, class=CODE, space=0, delta=2
 
         return
 
-    increment_score1: ; increments score 1 by .... 1
+    increment_score1: ; increments score 1 by 1
         banksel s1
         incf s1, F
         return
 
-    increment_score2: ; increments score 2 by .... 1
+    increment_score2: ; increments score 2 by 1
         banksel s2
         incf s2, F
         return
@@ -1163,7 +1238,6 @@ psect code, class=CODE, space=0, delta=2
     draw_paddle:
         call calc_paddle
 
-        
         call set_cursor
         banksel mask0 
         movf mask0, W ; load mask0 
@@ -1239,7 +1313,43 @@ psect code, class=CODE, space=0, delta=2
         call render_ball
         call render_paddles
         return
+    clear_screen:
+        banksel page_counter
+        movlw 8 ; 8 pages to clear
+        movwf page_counter
+        call loop_clear_screen
 
+        return
+
+    loop_clear_screen:
+        banksel page_counter
+        call clear_page
+        decfsz page_counter, F
+        goto loop_clear_screen
+        return
+        
+    clear_page:
+        banksel cursor_page
+        movwf cursor_page ; pass the target page via working
+        
+        banksel cursor_x
+        movlw 0 ; set cursor x to 0 to start
+        movwf cursor_x
+
+        movlw 128
+        movwf x_counter
+        call loop_clear_page ; send 128 empty bytes sequentially to clear entire page
+
+        return
+
+    loop_clear_page:
+        banksel x_counter
+        movlw empty_byte
+        call send_data
+        decfsz x_counter, F
+        goto loop_clear
+        return
+        
 ;**************************************** STARTUP ********************************************
 start:
     call set_frq
