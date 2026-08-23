@@ -144,7 +144,7 @@ arrow_down_3 equ 0b11111110
 arrow_down_4 equ 0b00001100
 arrow_down_5 equ 0b00000010
 
-empty_byte equ 0b00000000 ; Empty byte to clear screen 
+empty equ 0b00000000 ; Empty byte to clear screen 
 
 
 
@@ -222,6 +222,8 @@ psect bank0, class=BANK0, space=1
 
     page_counter: ds 1 ; page tracker for clear screen subroutine
     x_counter: ds 1 
+
+    loop_counter: ds 1 ; yet another temporary counter
  
 
 ;***************************************** SUBROUTINES ***************************************
@@ -481,6 +483,274 @@ psect code, class=CODE, space=0, delta=2
         bsf dir, 0 ; point towards paddle 2
         ; round reset game
         return
+
+;************************************ ASSETS DRAWER *******************************************
+
+    draw_p: ; all asset drawers assume cursor is loaded
+        movlw p_1
+        call send_data
+
+        movlw p_2
+        call send_data
+
+        movlw p_3
+        call send_data
+
+        return
+
+    draw_o:
+        movlw o_1
+        call send_data
+
+        movlw o_2
+        call send_data
+
+        movlw o_3
+        call send_data
+
+        return
+
+    draw_n:
+        movlw n_1 
+        call send_data
+
+        movlw n_2
+        call send_data
+
+        movlw n_3
+        call send_data
+
+        movlw n_4
+        call send_data
+
+        return
+
+    draw_g:
+        movlw g_1
+        call send_data
+
+        movlw g_2
+        call send_data
+
+        movlw g_3
+        call send_data
+
+        return
+
+    draw_s:
+        movlw s_1
+        call send_data
+
+        movlw s_2
+        call send_data
+
+        movlw s_3
+        call send_data
+
+        return
+
+    draw_t:
+        movlw t_1
+        call send_data
+
+        movlw t_2
+        call send_data
+
+        movlw t_3
+        call send_data
+
+        return
+
+    draw_a:
+        movlw a_1
+        call send_data
+
+        movlw a_2
+        call send_data
+
+        movlw a_3
+        call send_data
+
+        return
+
+    draw_r:
+        movlw r_1
+        call send_data
+
+        movlw r_2
+        call send_data
+
+        movlw r_3
+        call send_data
+
+        return
+
+    draw_e:
+        movlw e_1
+        call send_data
+
+        movlw e_2
+        call send_data
+
+        movlw e_3
+        call send_data
+
+        return
+
+    draw_1:
+        movlw number_1_1
+        call send_data
+
+        movlw number_1_2
+        call send_data
+
+        movlw number_1_3
+        call send_data
+
+        return
+
+    draw_2:
+        movlw number_2_1
+        call send_data
+
+        movlw number_2_2
+        call send_data
+
+        movlw number_2_3
+        call send_data
+
+        return
+
+    draw_exc:
+        movlw symbol_exc
+        call send_data
+
+        return
+
+    draw_left_arrow:
+        movlw arrow_left_1
+        call send_data
+
+        movlw arrow_left_2
+        call send_data
+
+        movlw arrow_left_3 
+        call send_data
+
+        banksel loop_counter
+        movlw 9
+        movwf loop_counter
+        movlw arrow_left_4_12
+        call loop_draw
+        
+        return
+
+    draw_right_arrow:
+        banksel loop_counter
+        movlw 9
+        movwf loop_counter
+        movlw arrow_right_1_9
+        call loop_draw
+
+        movlw arrow_right_10
+        call send_data
+
+        movlw arrow_right_11
+        call send_data
+
+        movlw arrow_right_12
+        call send_data
+
+        return
+
+    draw_down_arrow:
+        movlw arrow_down_1
+        call send_data
+
+        movlw arrow_down_2
+        call send_data
+
+        movlw arrow_down_3
+        call send_data
+
+        movlw arrow_down_4
+        call send_data
+
+        movlw arrow_down_5
+        call send_data
+
+        return
+
+    draw_pong:
+        ; draws the word pong given a loaded cursor
+        call draw_p
+        call draw_empty_2
+        call draw_o
+        call draw_empty_2
+        call draw_n
+        call draw_empty_2
+        call draw_g
+        call draw_empty_2
+        call draw_exc
+
+        return
+
+    draw_start:
+        ; draws the word start given a loaded cursor
+        call draw_s
+        call draw_empty_2
+        call draw_t
+        call draw_empty_2
+        call draw_a
+        call draw_empty_2
+        call draw_r
+        call draw_empty_2
+        call draw_t
+
+        return
+
+    draw_reset:
+        call draw_r
+        call draw_empty_2
+        call draw_e
+        call draw_empty_2
+        call draw_s
+        call draw_empty_2
+        call draw_e
+        call draw_empty_2
+        call draw_t
+
+        return
+
+    draw_p1:
+        call draw_p
+        call draw_1
+        
+        return
+    
+    draw_p2:
+        call draw_p
+        call draw_2
+        
+        return
+
+    draw_empty_2: ; draw two empty bytes
+        movlw empty
+        call send_data
+
+        movlw empty
+        call send_data
+
+        return
+
+    loop_draw:
+        call send_data ; loop draw the working memory byte loop_counter number of times
+        decfsz loop_counter, F
+        goto loop_draw
+        return
+        
+        
+
 ;**************************************** GAME ************************************************
     round_reset:
         return
@@ -489,7 +759,81 @@ psect code, class=CODE, space=0, delta=2
         return
     
     diplay_start:
+        
+        banksel cursor_page
+        movlw 1
+        movwf cursor_page ; PONG drawn on page 1 
+        movlw 55
+        movwf cursor_x
+        call set_cursor
+        call draw_pong
+
+        banksel cursor_page
+        movlw 3
+        movwf cursor_page ; left arrow drawn on page 2 
+        movlw 4
+        movwf cursor_x
+        call set_cursor 
+        call draw_left_arrow 
+
+        banksel cursor_page
+        movlw 3
+        movwf cursor_page
+        movlw 23
+        movwf cursor_x
+        call set_cursor
+        call draw_start
+
+        banksel cursor_page
+        movlw 3
+        movwf cursor_page
+        movlw 83
+        movwf cursor_x
+        call set_cursor
+        call draw_reset
+
+        banksel cursor_page
+        movlw 3
+        movwf cursor_page
+        movlw 111
+        movwf cursor_x
+        call set_cursor
+        call draw_right_arrow
+
+        banksel cursor_page
+        movlw 5
+        movwf cursor_page
+        movlw 30
+        movwf cursor_x
+        call set_cursor
+        call draw_p1
+
+        banksel cursor_page
+        movlw 5
+        movwf cursor_page
+        movlw 91
+        movwf cursor_x
+        call set_cursor
+        call draw_p2
+
+        banksel cursor_page
+        movlw 6
+        movwf cursor_page
+        movlw 33
+        movwf cursor_page
+        call draw_down_arrow
+
+        banksel cursor_page
+        movlw 6
+        movwf cursor_page
+        movlw 94
+        movwf cursor_page
+        call draw_down_arrow
+        
         return
+
+
+
     
     display_win1:
         return
@@ -1344,10 +1688,11 @@ psect code, class=CODE, space=0, delta=2
 
     loop_clear_page:
         banksel x_counter
-        movlw empty_byte
+        movlw empty
+    
         call send_data
         decfsz x_counter, F
-        goto loop_clear
+        goto loop_clear_page
         return
         
 ;**************************************** STARTUP ********************************************
