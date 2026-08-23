@@ -62,7 +62,7 @@ ENA_CPUMP2 equ 0x14
 SET_ADDR_MODE equ 0x20 ; ADDR mode
 PAGE_MODE equ 0x02 ; PAGE mode
 REMAP equ 0xA1
-SET_COM equ 0xC8 
+SET_COM equ 0xC0
 SET_COM_CONFIG1 equ 0xDA
 SET_COM_CONFIG2 equ 0x12 ; 128x64
 SET_CONT1 equ 0x81
@@ -357,12 +357,16 @@ psect code, class=CODE, space=0, delta=2
         movlw 32; set y1 and y2 of the paddles to 32
         movwf y1
         movwf y2
+        movwf old_y1
+        movwf old_y2
     full_reset_ball:
         movlw 64
         movwf xF ; set x coordinate
+        movwf old_xF
     
         movlw 32
         movwf yF ; set y coordinate
+        movwf old_yF
 
         clrf xS ; clear the sub pixel values
         clrf yS
@@ -641,6 +645,7 @@ psect code, class=CODE, space=0, delta=2
         movlw 9
         movwf loop_counter
         movlw arrow_left_4_12
+        movwf temp
         call loop_draw
         
         return
@@ -650,6 +655,7 @@ psect code, class=CODE, space=0, delta=2
         movlw 9
         movwf loop_counter
         movlw arrow_right_1_9
+        movwf temp
         call loop_draw
 
         movlw arrow_right_10
@@ -744,7 +750,9 @@ psect code, class=CODE, space=0, delta=2
         return
 
     loop_draw:
-        call send_data ; loop draw the working memory byte loop_counter number of times
+        movf temp, W ; movwf temp before calling loop_draw
+        call send_data
+        banksel loop_counter
         decfsz loop_counter, F
         goto loop_draw
         return
@@ -758,7 +766,7 @@ psect code, class=CODE, space=0, delta=2
     wait_start:
         return
     
-    diplay_start:
+    display_start:
         
         banksel cursor_page
         movlw 1
@@ -820,21 +828,39 @@ psect code, class=CODE, space=0, delta=2
         movlw 6
         movwf cursor_page
         movlw 33
-        movwf cursor_page
+        movwf cursor_x
+        call set_cursor
         call draw_down_arrow
 
         banksel cursor_page
         movlw 6
         movwf cursor_page
         movlw 94
-        movwf cursor_page
+        movwf cursor_x
+        call set_cursor
         call draw_down_arrow
         
         return
 
+    display_temp:
+        
+        banksel cursor_page
+        clrf cursor_page
+        banksel cursor_x
+        ;clrf cursor_x
+        movlw 50
+        movwf cursor_x
+        call set_cursor
+        call draw_pong
 
+        banksel cursor_page
+        movlw 7
+        movwf cursor_page
+        banksel cursor_x
+        clrf cursor_x
+        call set_cursor
+        call draw_pong
 
-    
     display_win1:
         return
     
@@ -1431,8 +1457,9 @@ psect code, class=CODE, space=0, delta=2
 
     set_cursor:
         banksel cursor_page ; load cursor page (binary 0-7)
-        movf cursor_page, W ; to select a page, 0xB0 - 0xB7 
+        movf cursor_page, W ; to select a page, 0xB0 - 0xB7
         andlw 0b00000111 ; keep last three bits, and keeps the page data
+        sublw 7 ; invert because the screen indexes pages 0-7 bottom to top weridly enough
         iorlw 0xB0 ; combine with base cursor page command
         call send_command ; send command to select page to screen
 
@@ -1442,23 +1469,31 @@ psect code, class=CODE, space=0, delta=2
         iorlw 0x00 ; combine with base command - redudnant = 0b00000000
         call send_command
 
+        banksel cursor_x
         swapf cursor_x, W ; swap top 4 bits with bottom 4 bits for top column address
         andlw 0b00001111 ; keep last 4 bits for top four bits of the column address
-        iorlw 0x01 ; combine with base command
+        iorlw 0x10 ; combine with base command
         call send_command
         return
     
     get_bitmask: ; draw one pixel - ball
         ;  pass in y coordinate mod 8  - tells which pixel to be turned on, i.e 7 says turn on bit 7. 
         brw ; PC = PC + W - for example if PC = 3, skip to 3rd retlw
-        retlw 0b00000001
-        retlw 0b00000010
-        retlw 0b00000100
-        retlw 0b00001000
-        retlw 0b00010000
-        retlw 0b00100000
-        retlw 0b01000000
         retlw 0b10000000
+        retlw 0b01000000
+        retlw 0b00100000
+        retlw 0b00010000
+        retlw 0b00001000
+        retlw 0b00000100
+        retlw 0b00000010
+        retlw 0b00000001
+        
+        
+        
+        
+        
+        
+        
 
     render_ball:
         movf old_xF, W
@@ -1627,10 +1662,10 @@ psect code, class=CODE, space=0, delta=2
         subwf y1, W ; y1 - 5 (to move reference from center to top pixel)
         call draw_paddle
 
-        banksel y1
-        movf y1, W
-        banksel old_y1
-        movwf old_y1 ; cache used y coordinate to be erased later
+        banksel y2
+        movf y2, W
+        banksel old_y2
+        movwf old_y2 ; cache used y coordinate to be erased later
 
         banksel cursor_x
         movlw 125
@@ -1638,12 +1673,12 @@ psect code, class=CODE, space=0, delta=2
 
         banksel old_y2
         movlw 5
-        subwf old_y1, W
+        subwf old_y2, W
         call erase_paddle
 
         banksel y2
         movlw 5
-        subwf y1, W
+        subwf y2, W
         call draw_paddle
 
         banksel y2
@@ -1667,7 +1702,10 @@ psect code, class=CODE, space=0, delta=2
 
     loop_clear_screen:
         banksel page_counter
+        movf page_counter, W
+        decf page_counter, W
         call clear_page
+        banksel page_counter
         decfsz page_counter, F
         goto loop_clear_screen
         return
@@ -1677,8 +1715,9 @@ psect code, class=CODE, space=0, delta=2
         movwf cursor_page ; pass the target page via working
         
         banksel cursor_x
-        movlw 0 ; set cursor x to 0 to start
-        movwf cursor_x
+        clrf cursor_x ; set cursor x to 0 to start
+        call set_cursor
+
 
         movlw 128
         movwf x_counter
@@ -1691,6 +1730,7 @@ psect code, class=CODE, space=0, delta=2
         movlw empty
     
         call send_data
+        banksel x_counter
         decfsz x_counter, F
         goto loop_clear_page
         return
@@ -1706,15 +1746,20 @@ start:
     call full_reset_ball
     call clear_scores
     call clear_registers
-    call boot_sequence    
-    call wait1000ms ;wait
+    call boot_sequence 
+    ;call clear_screen 
+    ;call display_start  
+    call clear_screen
+    goto temp_loop
+
+    ;call wait1000ms ;wait
     ; wait for start button
     ; say starting
     ; wait 1s after start hit
 
 
 
-    goto main
+    ;goto main
 
     ;x1 = 1 - paddle 2px wide
     ;x2 = 126 - paddle 2px wide
@@ -1722,12 +1767,14 @@ start:
         
 ;***************************************** MAIN LOOP *****************************************
 
-main:
+main: 
     movf substep_speed, W ; load substep_speed into substep counter
     movwf substeps
 
     call update_paddle1
     call update_paddle2
+
+    
 
     goto physics_loop
 
@@ -1747,7 +1794,15 @@ physics_loop:
     decfsz substeps, F
     
     goto physics_loop
+    call wait10ms
     goto main
+
+temp_loop:
+    ;call display_temp
+    call display_start
+    ;call wait10ms
+    ;goto temp_loop
+    goto $
 
 ;**************************************** INTERRUPTS *****************************************
 
