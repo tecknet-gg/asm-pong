@@ -394,11 +394,17 @@ psect code, class=CODE, space=0, delta=2
         return
 
     reset_ball: ; retain direction data
+        call clear_screen
+        
         movlw 64
         movwf xF
+        banksel old_xF
+        movwf old_xF ; save old_xF
 
         movlw 32
         movwf yF
+        banksel old_yF
+        movwf old_yF
 
         clrf xS
         clrf yS
@@ -1088,25 +1094,24 @@ psect code, class=CODE, space=0, delta=2
         btfsc dir, 1
         return ; skip collision if moving down
 
-        btfsc yF, 7
-        call top_bounce 
+        movf yF, W
+        btfsc STATUS, Z ; if zero, call top_bounce
+        goto top_bounce
 
-        movlw 0
-        subwf yF, W
-        btfsc STATUS, Z
-        call top_bounce
+        btfsc yF, 7
+        goto top_bounce
         return
-        ;undeflow logic? check if it hits 255 (or above 128)
 
     check_bottom:
         btfss dir, 1
         return ; skip collision if moving up
+        
         movlw 63
-        subwf yF, W
-        btfss STATUS, C
+        subwf yF, W ; W = yF - 63
+        btfsc STATUS, C ; yF>= 63 -> C=1
+        goto bottom_bounce
         return
-        call bottom_bounce
-        return
+        
     
     top_bounce:
         bsf dir, 1
@@ -1128,6 +1133,7 @@ psect code, class=CODE, space=0, delta=2
         xorwf xF, W
         btfss STATUS, Z ; 1 = equal
         return
+
 
         movf y1, W ; W = yF - y1
         subwf yF, W  ; calculate difference and store in working        
@@ -1372,19 +1378,33 @@ psect code, class=CODE, space=0, delta=2
         return
 
     check_backwalls:
-        btfsc xF, 7 ; did xF underflow
-        goto p2_scores
-
-        movf xF, W
-        btfsc STATUS, Z
-        goto p2_scores
-
-        movlw 126
-        subwf xF, W
-        btfsc STATUS, C
-        goto p1_scores
-
+        call check_backwall1
+        call check_backwall2
         return
+
+    check_backwall1:
+        
+        btfsc dir, 0 ; skip if moving left
+        return
+    
+        movf xF, W
+        btfsc STATUS, Z ; if == 0, p2 scores
+        goto p2_scores
+        btfsc xF, 7 ; xF >=128 - has underflown
+        goto p2_scores
+        return
+
+    check_backwall2:
+        
+        btfss dir, 0 ; skip if moving right
+        return    
+
+        movf xF, W ; xF >=127 return
+        sublw 127
+        btfss STATUS, C
+        goto p1_scores
+        return
+    
 
 ;*************************************** SCREEN **********************************************
     setup_spi:
@@ -1550,13 +1570,6 @@ psect code, class=CODE, space=0, delta=2
         retlw 0b01000000
         retlw 0b10000000
         
-        
-        
-        
-        
-        
-        
-
     render_ball:
         banksel old_xF
         movf old_xF, W
@@ -1863,8 +1876,8 @@ main:
 physics_loop:
     call update_ball
     call check_walls
-    ;call paddle1_collision
-    ;call paddle2_collision
+    call paddle1_collision
+    call paddle2_collision
 
     call check_backwalls
     call render_frame
