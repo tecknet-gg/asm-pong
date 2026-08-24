@@ -360,13 +360,16 @@ psect code, class=CODE, space=0, delta=2
         movlw 32; set y1 and y2 of the paddles to 32
         movwf y1
         movwf y2
+        banksel old_y1
         movwf old_y1
         movwf old_y2
     full_reset_ball:
+        banksel old_xF
         movlw 64
         movwf xF ; set x coordinate
         movwf old_xF
-    
+
+        banksel old_yF
         movlw 32
         movwf yF ; set y coordinate
         movwf old_yF
@@ -383,7 +386,7 @@ psect code, class=CODE, space=0, delta=2
         movlw 0
         movwf y_vel
 
-        movlw 0b00000011 
+        movlw 0b00000011; temp 
         movwf dir
 
         movlw 0
@@ -427,14 +430,14 @@ psect code, class=CODE, space=0, delta=2
 ;***************************************** ADC ***********************************************
     read_paddle1:
         banksel ADCON0
-        movlw 0b00010001 ; select RA4 as input channel (pg241)
+        movlw 0b00010101 ; select RA5 as input channel (pg241)
         movwf ADCON0
         call run_adc
         return
 
     read_paddle2:
         banksel ADCON0
-        movlw 0b00010101 ; select RA5 as input channel (pg241)
+        movlw 0b00010001 ; select RA4 as input channel (pg241)
         movwf ADCON0
         call run_adc
         return
@@ -487,6 +490,7 @@ psect code, class=CODE, space=0, delta=2
         return
     p2_scores:
         call increment_score2
+        call reset_ball
         bsf dir, 0 ; point towards paddle 2
         ; round reset game
         return
@@ -832,7 +836,7 @@ psect code, class=CODE, space=0, delta=2
     display_start:
         
         banksel cursor_page
-        movlw 1
+        movlw 6
         movwf cursor_page ; PONG drawn on page 1 
         movlw 55
         movwf cursor_x
@@ -840,7 +844,7 @@ psect code, class=CODE, space=0, delta=2
         call draw_pong
 
         banksel cursor_page
-        movlw 3
+        movlw 4
         movwf cursor_page ; left arrow drawn on page 2 
         movlw 4
         movwf cursor_x
@@ -848,7 +852,7 @@ psect code, class=CODE, space=0, delta=2
         call draw_left_arrow 
 
         banksel cursor_page
-        movlw 3
+        movlw 4
         movwf cursor_page
         movlw 23
         movwf cursor_x
@@ -856,7 +860,7 @@ psect code, class=CODE, space=0, delta=2
         call draw_start
 
         banksel cursor_page
-        movlw 3
+        movlw 4
         movwf cursor_page
         movlw 83
         movwf cursor_x
@@ -864,7 +868,7 @@ psect code, class=CODE, space=0, delta=2
         call draw_reset
 
         banksel cursor_page
-        movlw 3
+        movlw 4
         movwf cursor_page
         movlw 111
         movwf cursor_x
@@ -872,7 +876,7 @@ psect code, class=CODE, space=0, delta=2
         call draw_right_arrow
 
         banksel cursor_page
-        movlw 5
+        movlw 2
         movwf cursor_page
         movlw 30
         movwf cursor_x
@@ -880,7 +884,7 @@ psect code, class=CODE, space=0, delta=2
         call draw_p1
 
         banksel cursor_page
-        movlw 5
+        movlw 2
         movwf cursor_page
         movlw 91
         movwf cursor_x
@@ -888,7 +892,7 @@ psect code, class=CODE, space=0, delta=2
         call draw_p2
 
         banksel cursor_page
-        movlw 6
+        movlw 1
         movwf cursor_page
         movlw 33
         movwf cursor_x
@@ -896,7 +900,7 @@ psect code, class=CODE, space=0, delta=2
         call draw_down_arrow
 
         banksel cursor_page
-        movlw 6
+        movlw 1
         movwf cursor_page
         movlw 94
         movwf cursor_x
@@ -904,8 +908,6 @@ psect code, class=CODE, space=0, delta=2
         call draw_down_arrow
         
         return
-
-    display_temp:
         
         banksel cursor_page
         clrf cursor_page
@@ -1085,6 +1087,10 @@ psect code, class=CODE, space=0, delta=2
     check_top:
         btfsc dir, 1
         return ; skip collision if moving down
+
+        btfsc yF, 7
+        call top_bounce 
+
         movlw 0
         subwf yF, W
         btfsc STATUS, Z
@@ -1366,26 +1372,19 @@ psect code, class=CODE, space=0, delta=2
         return
 
     check_backwalls:
-        call check_backwall1
-        call check_backwall2
-        return
-    
-    check_backwall1:
-        movlw 0
-        xorwf xF, W 
-        btfsc STATUS, Z ;if set, xF == 0, so scores
-        call p2_scores
+        btfsc xF, 7 ; did xF underflow
+        goto p2_scores
 
-        btfsc xF, 7 
-        goto p2_scores ; just in case it underflows 0 -> 255
+        movf xF, W
+        btfsc STATUS, Z
+        goto p2_scores
+
+        movlw 126
+        subwf xF, W
+        btfsc STATUS, C
+        goto p1_scores
+
         return
-    
-    check_backwall2:
-        movlw 127
-        subwf xF, W ; (xF - 127)>=0
-        btfsc STATUS, C  ; if set, no borrow, so xF>=127
-        call p1_scores
-        return 
 
 ;*************************************** SCREEN **********************************************
     setup_spi:
@@ -1522,7 +1521,7 @@ psect code, class=CODE, space=0, delta=2
         banksel cursor_page ; load cursor page (binary 0-7)
         movf cursor_page, W ; to select a page, 0xB0 - 0xB7
         andlw 0b00000111 ; keep last three bits, and keeps the page data
-        sublw 7 ; invert because the screen indexes pages 0-7 bottom to top weridly enough
+        ;sublw 7 ; invert because the screen indexes pages 0-7 bottom to top weridly enough
         iorlw 0xB0 ; combine with base cursor page command
         call send_command ; send command to select page to screen
 
@@ -1542,14 +1541,14 @@ psect code, class=CODE, space=0, delta=2
     get_bitmask: ; draw one pixel - ball
         ;  pass in y coordinate mod 8  - tells which pixel to be turned on, i.e 7 says turn on bit 7. 
         brw ; PC = PC + W - for example if PC = 3, skip to 3rd retlw
-        retlw 0b10000000
-        retlw 0b01000000
-        retlw 0b00100000
-        retlw 0b00010000
-        retlw 0b00001000
-        retlw 0b00000100
+        retlw 0b00000001 ; change this back maybe?
         retlw 0b00000010
-        retlw 0b00000001
+        retlw 0b00000100
+        retlw 0b00001000
+        retlw 0b00010000
+        retlw 0b00100000
+        retlw 0b01000000
+        retlw 0b10000000
         
         
         
@@ -1559,9 +1558,11 @@ psect code, class=CODE, space=0, delta=2
         
 
     render_ball:
+        banksel old_xF
         movf old_xF, W
         movwf cursor_x ; move old x coordinate to cursor x - takes full 8 bits
 
+        banksel old_yF
         movf old_yF, W
         movwf temp ; move to temp
 
@@ -1577,6 +1578,7 @@ psect code, class=CODE, space=0, delta=2
         call send_data
 
         movf xF, W ; load new x value
+        banksel cursor_x
         movwf cursor_x
 
         movf yF, W
@@ -1587,6 +1589,7 @@ psect code, class=CODE, space=0, delta=2
         lsrf temp ; divide by 8 to get page
 
         movf temp, W
+        banksel cursor_page
         movwf cursor_page
         
         call set_cursor ; set cursor with x and page
@@ -1597,9 +1600,11 @@ psect code, class=CODE, space=0, delta=2
         call send_data
 
         movf xF, W ; cache coordinates to erase next cycle
+        banksel old_xF
         movwf old_xF
 
         movf yF, W
+        banksel old_yF
         movwf old_yF
 
         return
@@ -1725,10 +1730,11 @@ psect code, class=CODE, space=0, delta=2
         subwf y1, W ; y1 - 5 (to move reference from center to top pixel)
         call draw_paddle
 
-        banksel y2
-        movf y2, W
-        banksel old_y2
-        movwf old_y2 ; cache used y coordinate to be erased later
+        banksel y1
+        movf y1, W
+        banksel old_y1
+        movwf old_y1
+
 
         banksel cursor_x
         movlw 125
@@ -1747,11 +1753,17 @@ psect code, class=CODE, space=0, delta=2
         banksel y2
         movf y2, W
         banksel old_y2
+        movwf old_y2 ; cache used y coordinate to be erased later
+
+        banksel y2
+        movf y2, W
+        banksel old_y2
         movwf old_y2
 
         return
 
     render_frame:
+        ;call clear_screen
         call render_ball
         call render_paddles
         return
@@ -1810,9 +1822,11 @@ start:
     call clear_scores
     call clear_registers
     call boot_sequence 
-    ;call clear_screen 
+    call clear_screen 
     ;call display_start  
-    call clear_screen
+    ;call clear_screen
+
+    ;call temp_loop
 
 
     ;call wait1000ms ;wait
@@ -1820,9 +1834,14 @@ start:
     ; say starting
     ; wait 1s after start hit
 
+    call wait1000ms
+    call wait1000ms
+    call wait1000ms
+    call wait1000ms
+    call wait1000ms
+    
 
-
-    ;goto main
+    goto main
 
     ;x1 = 1 - paddle 2px wide
     ;x2 = 126 - paddle 2px wide
@@ -1842,34 +1861,37 @@ main:
     goto physics_loop
 
 physics_loop:
-    call check_score
     call update_ball
-    
     call check_walls
-    
-    call paddle1_collision
-    call paddle2_collision
+    ;call paddle1_collision
+    ;call paddle2_collision
 
     call check_backwalls
-
-    call render_frame ; render frame after each asset update
+    call render_frame
 
     decfsz substeps, F
-    
     goto physics_loop
+
     call wait10ms
     goto main
 
 temp_loop:
-    ;call display_temp
-    ;call display_start
-    call wait1000ms
-    call wait1000ms
-    banksel s1
-    incf s1
-    call display_scores
-    ;call wait10ms
+    call update_paddle1
+    call update_paddle2
+
+    call render_paddles
+
+    call wait10ms
+
     goto temp_loop
+
+temp_loop2:
+    call wait1000ms
+    call clear_screen
+    call display_start
+    goto temp_loop2
+
+
     
 
 ;**************************************** INTERRUPTS *****************************************
