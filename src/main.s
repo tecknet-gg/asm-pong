@@ -142,10 +142,13 @@ arrow_down_1 equ 0b00001000 ; Arrow down - 5 wide
 arrow_down_2 equ 0b00001100
 arrow_down_3 equ 0b11111110
 arrow_down_4 equ 0b00001100
-arrow_down_5 equ 0b00000010
+arrow_down_5 equ 0b00001000
 
 empty equ 0b00000000 ; Empty byte to clear screen 
-
+;***************************************** SEVEN SEG ***************************************
+SER equ 0 ; RC0 - Serial Data in - set the segment bits
+SRCLK equ 1 ; RC1 - Pushes SER into the chip on rising edges
+RCLK equ 2  ; RC2 - Latch
 
 
 
@@ -488,6 +491,64 @@ psect code, class=CODE, space=0, delta=2
         ; round reset game
         return
 
+    display_scores:
+        banksel s2 ; shift out the two score bytes to the seven segment displays
+        movf s2, W ; load score 2 into working
+
+        call get_segment
+        call shift_out
+
+        banksel s1
+        movf s1, W
+        call get_segment
+        call shift_out
+
+        banksel LATC
+        bcf LATC, RCLK ; latch low
+        nop
+        bsf LATC, RCLK ; latch high
+        nop 
+        bcf LATC, RCLK ; latch low - latch both seven segments 
+
+        return
+
+    get_segment:
+        brw
+        retlw 0b00111111 ; 0
+        retlw 0b00000110 ; 1
+        retlw 0b01011011 ; 2
+        retlw 0b01001111 ; 3
+        retlw 0b01100110 ; 4
+        retlw 0b01101101 ; 5
+        retlw 0b01111101 ; 6
+        retlw 0b00000111 ; 7
+        retlw 0b01111111 ; 8
+        retlw 0b01101111 ; 9
+
+    shift_out:
+        movwf temp ; store byte temporarily
+        movlw 8
+        movwf loop_counter ; send out 8 bytes
+    
+    bit_loop:
+        banksel LATC
+        bcf LATC, SER ;  clear serial data first
+        btfsc temp, 7 ; check MSB, if 1, set SER to 1, otherwise leave as zero
+        bsf LATC, SER ; set SER high if 1
+
+        bsf LATC, SRCLK ; clock high
+        nop
+        bcf LATC, SRCLK ; clock low - push SER into chip
+
+        rlf temp, F ; rotate left to shift next bit into MSB
+        banksel loop_counter
+        decfsz loop_counter, F ; loop 8 times to send all 8 bits
+        goto bit_loop
+
+        return
+
+
+
 ;************************************ ASSETS DRAWER *******************************************
 
     draw_p: ; all asset drawers assume cursor is loaded
@@ -730,12 +791,14 @@ psect code, class=CODE, space=0, delta=2
 
     draw_p1:
         call draw_p
+        call draw_empty_2
         call draw_1
         
         return
     
     draw_p2:
         call draw_p
+        call draw_empty_2
         call draw_2
         
         return
@@ -1750,7 +1813,7 @@ start:
     ;call clear_screen 
     ;call display_start  
     call clear_screen
-    goto temp_loop
+
 
     ;call wait1000ms ;wait
     ; wait for start button
@@ -1799,10 +1862,15 @@ physics_loop:
 
 temp_loop:
     ;call display_temp
-    call display_start
+    ;call display_start
+    call wait1000ms
+    call wait1000ms
+    banksel s1
+    incf s1
+    call display_scores
     ;call wait10ms
-    ;goto temp_loop
-    goto $
+    goto temp_loop
+    
 
 ;**************************************** INTERRUPTS *****************************************
 
