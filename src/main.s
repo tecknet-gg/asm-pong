@@ -150,8 +150,6 @@ SER equ 0 ; RC0 - Serial Data in - set the segment bits
 SRCLK equ 1 ; RC1 - Pushes SER into the chip on rising edges
 RCLK equ 2  ; RC2 - Latch
 
-
-
 ;***************************************** VECTORS ******************************************
 
 ;RESET VECTOR
@@ -331,11 +329,11 @@ psect code, class=CODE, space=0, delta=2
         bcf PPSLOCK, 0 ; unlock PPS
 
         banksel RC3PPS
-        movlw 0b00011000 ;11000 = SCK1/SCL1 (pg 163)
+        movlw 0b00011000 ;11000 = SCK1/SCL1 (pg 163) - set RC3 to SCK for Screen
         movwf RC3PPS 
 
         banksel RC4PPS
-        movlw 0b00011001 ;11001 = SDO1/SDA1 (pg 163)
+        movlw 0b00011001 ;11001 = SDO1/SDA1 (pg 163) - Serial Data Out for screen
         movwf RC4PPS
 
         banksel PPSLOCK
@@ -348,7 +346,7 @@ psect code, class=CODE, space=0, delta=2
         return
 
     setup_adc:
-        banksel ADCON1
+        banksel ADCON1 ; ADCON1 - setup ADC, ADCON0 - use ADC
         movlw 0b01110000
         movwf ADCON1 ; left justified, dedicated RC oscillator, VREFs connected to VDD and VSS (pg 240, 241, 245)
 
@@ -361,9 +359,11 @@ psect code, class=CODE, space=0, delta=2
         movwf y1
         movwf y2
         banksel old_y1
-        movwf old_y1
+        movwf old_y1 ; initialise old coordiantes to 32 too
         movwf old_y2
     full_reset_ball:
+        call clear_screen
+
         banksel old_xF
         movlw 64
         movwf xF ; set x coordinate
@@ -442,7 +442,7 @@ psect code, class=CODE, space=0, delta=2
         return
 
     read_paddle2:
-        banksel ADCON0
+        banksel ADCON0 ;
         movlw 0b00010001 ; select RA4 as input channel (pg241)
         movwf ADCON0
         call run_adc
@@ -451,7 +451,7 @@ psect code, class=CODE, space=0, delta=2
     run_adc:
         call wait125us ; wait for acquisition (pg241)
         banksel ADCON0
-        bsf ADCON0, 1
+        bsf ADCON0, 1 ; 1st bit is ADC status
         goto wait_adc
 
     wait_adc:
@@ -459,7 +459,7 @@ psect code, class=CODE, space=0, delta=2
         btfsc ADCON0, 1; test to see if conversion is done
         goto wait_adc; go back to btsf if not done
         banksel ADRESH
-        movf ADRESH, W; get the 8 upper bits
+        movf ADRESH, W; get the 8 upper bits and return to working
         return
 
 ;**************************************** SCORE ***********************************************
@@ -538,14 +538,14 @@ psect code, class=CODE, space=0, delta=2
     shift_out:
         movwf temp ; store byte temporarily
         movlw 8
-        movwf loop_counter ; send out 8 bytes
+        movwf loop_counter ; send out 8 bits
     
     bit_loop:
         banksel LATC
         bcf LATC, SER ;  clear serial data first
         btfsc temp, 7 ; check MSB, if 1, set SER to 1, otherwise leave as zero
         bsf LATC, SER ; set SER high if 1
-
+        
         bsf LATC, SRCLK ; clock high
         nop
         bcf LATC, SRCLK ; clock low - push SER into chip
@@ -963,7 +963,6 @@ psect code, class=CODE, space=0, delta=2
         goto ball_down
     
     ball_up:
-
         movf y_vel, W
         subwf yS, F
         btfss STATUS, C ; did it carry?
@@ -977,7 +976,7 @@ psect code, class=CODE, space=0, delta=2
         incf yF, F
         return
 
-    check_collisions:
+    check_collisions: ; a bit misleading - checks to see if collisions passes threshold to make ball faster
         
         incf collisions, F ; update collision count    
 
@@ -1015,7 +1014,7 @@ psect code, class=CODE, space=0, delta=2
         return
 
     ramp_3:
-        movlw 255
+        movlw 255 ; if 255, don't change - max speed reached
         xorwf x_vel, W
         btfsc STATUS, Z
         return
@@ -1028,11 +1027,6 @@ psect code, class=CODE, space=0, delta=2
 
         movlw 255
         movwf x_vel
-        return
-
-        movlw 255
-        movwf x_vel
-
         return
     
 
@@ -1098,7 +1092,7 @@ psect code, class=CODE, space=0, delta=2
         btfsc STATUS, Z ; if zero, call top_bounce
         goto top_bounce
 
-        btfsc yF, 7
+        btfsc yF, 7 ; check for underflow - if it decrements below 0 and becomes a number bigger than 128
         goto top_bounce
         return
 
@@ -1141,8 +1135,8 @@ psect code, class=CODE, space=0, delta=2
         btfsc STATUS, Z ; yF == y1 (center)
         goto middle_paddle1
         btfss STATUS, C
-        goto top_paddle1
-        goto bottom_paddle1
+        goto top_paddle1 ; if yF<y1, ball hit top of paddle
+        goto bottom_paddle1 ; if yF>y1, ball hit bottom of paddle
         
 
     top_paddle1:
@@ -1150,7 +1144,7 @@ psect code, class=CODE, space=0, delta=2
         subwf y1, W
     
         movwf diff
-        sublw 5
+        sublw 5 ; L - W = 5 - diff
         btfss STATUS, C ; diff>5, carry=0, ball missed
         return
 
@@ -1160,7 +1154,7 @@ psect code, class=CODE, space=0, delta=2
         movlw 3
         movwf xF ; clamp ball to coordinate of 3
         
-        call check_collisions
+        call check_collisions ; check to see if ball should speed up
 
         movf diff, W ; pass distance to the router
         goto offset_router
@@ -1266,7 +1260,7 @@ psect code, class=CODE, space=0, delta=2
     
 
     offset_router:
-        movwf temp ; replace with brw? 
+        movwf temp ; 
         
         decf temp, F ; decrement difference, if equal to zero, route offset 1, if diff > 1, move onto next decrement check cycle
         btfsc STATUS, Z
@@ -1428,7 +1422,7 @@ psect code, class=CODE, space=0, delta=2
         movwf SSP1BUF
     
     wait_spi:
-        banksel SSP1STAT
+        banksel SSP1STAT ; check status bit
         btfss SSP1STAT, 0
         goto wait_spi
         
@@ -1561,7 +1555,7 @@ psect code, class=CODE, space=0, delta=2
     get_bitmask: ; draw one pixel - ball
         ;  pass in y coordinate mod 8  - tells which pixel to be turned on, i.e 7 says turn on bit 7. 
         brw ; PC = PC + W - for example if PC = 3, skip to 3rd retlw
-        retlw 0b00000001 ; change this back maybe?
+        retlw 0b00000001 
         retlw 0b00000010
         retlw 0b00000100
         retlw 0b00001000
@@ -1649,7 +1643,7 @@ psect code, class=CODE, space=0, delta=2
         btfsc STATUS, Z
         return
 
-        shift_loop:
+    shift_loop:
         ; decrement offset counter (temp) by shifting bits in mask to the left. 
         bcf STATUS, C ; clear CARRY
         banksel mask0
@@ -1840,6 +1834,8 @@ start:
     ;call clear_screen
 
     ;call temp_loop
+    banksel LATB
+    bcf LATB, 4
 
 
     ;call wait1000ms ;wait
