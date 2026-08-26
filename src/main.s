@@ -42,6 +42,11 @@ Z equ 0x02 ; zero
 
 T equ 6 ; set collision threshold for speed increment to 6
 
+;**************************************** BUTTONS *****************************************
+
+START equ 5
+RST equ 6
+
 ;**************************************** SSD1306 *****************************************
 
 OLED_RS equ 7 ; RES on SPI screen
@@ -161,7 +166,7 @@ org 0x0000
 ;INTERUPT VECTOR
 psect intVec, class=CODE, space=0, delta=2, abs
 org 0x0004
-    goto isr
+    goto reset_isr
 
 ;***************************************** REGISTERS *****************************************
 
@@ -190,6 +195,7 @@ psect common, class=COMMON, space=1; pg(30, 47sg). ds reserves 1 byte. COMMON ha
     temp: ds 1 ; temp register
 
     collisions: ds 1 ; counts numbe of collisions for speed increments
+    countdown_timer: ds 1
 
     ;score: ds 1 ; bit 0 -> 3 - player 1, bit 4 -> 7 - player 2 worth it or not? 
 
@@ -468,13 +474,13 @@ psect code, class=CODE, space=0, delta=2
         movf s1, W
         xorlw 9 ; check if player 1 has 9 points
         btfsc STATUS, Z ; read the Z status bit.
-        ;goto player1_wins
+        goto p1_wins
 
         banksel s2
         movf s2, W
         xorlw 9
         btfsc STATUS, Z
-        ;goto player2_wins
+        goto p2_wins
 
         return
 
@@ -490,16 +496,15 @@ psect code, class=CODE, space=0, delta=2
 
     p1_scores:
         call increment_score1
-        call reset_ball
-        bcf dir, 0 ; point towards paddle one
-        ; round reset game
-        return
+        call display_scores
+        bcf dir, 0
+        goto round_reset_handler
+ 
     p2_scores:
         call increment_score2
-        call reset_ball
-        bsf dir, 0 ; point towards paddle 2
-        ; round reset game
-        return
+        call display_scores
+        bcf dir, 0  
+        goto round_reset_handler
 
     display_scores:
         banksel s2 ; shift out the two score bytes to the seven segment displays
@@ -538,6 +543,7 @@ psect code, class=CODE, space=0, delta=2
     shift_out:
         movwf temp ; store byte temporarily
         movlw 8
+        banksel loop_counter
         movwf loop_counter ; send out 8 bits
     
     bit_loop:
@@ -833,11 +839,16 @@ psect code, class=CODE, space=0, delta=2
         
 
 ;**************************************** GAME ************************************************
-    round_reset:
-        return
-    
-    wait_start:
-        return
+    round_reset_handler:
+        call check_score
+        call reset_ball
+        call reset_paddles
+        call render_frame
+        call wait1000ms
+        movlw 3
+        call run_countdown
+        call display_scores
+        goto main ; resume game
     
     display_start:
         
@@ -933,10 +944,28 @@ psect code, class=CODE, space=0, delta=2
         call draw_pong
 
     display_win1:
+        call clear_screen
+        call display_start ;temp
         return
     
     display_win2:
+        call clear_screen
+        call display_start ; temp
         return
+
+    p1_wins:
+        call reset_paddles
+        call reset_ball
+        call display_win1
+        call wait_start_press
+        goto game_init
+
+    p2_wins:
+        call reset_paddles
+        call reset_ball
+        
+        call wait_start_press
+        goto game_init
 ;**************************************** BALL ************************************************
     update_ball:
         btfsc dir, 0 ; 0 - left, 1 - right
@@ -1372,32 +1401,26 @@ psect code, class=CODE, space=0, delta=2
         return
 
     check_backwalls:
-        call check_backwall1
-        call check_backwall2
-        return
+
+        btfss dir, 0
+        goto check_backwall1        
+        goto check_backwall2
+
 
     check_backwall1:
-        
-        btfsc dir, 0 ; skip if moving left
-        return
-    
         movf xF, W
         btfsc STATUS, Z ; if == 0, p2 scores
-        goto p2_scores
+        retlw 2
         btfsc xF, 7 ; xF >=128 - has underflown
-        goto p2_scores
-        return
+        retlw 2
+        retlw 0 ; status instead of routing to update score due to stack overflow
 
     check_backwall2:
-        
-        btfss dir, 0 ; skip if moving right
-        return    
-
         movf xF, W ; xF >=127 return
         sublw 127
         btfss STATUS, C
-        goto p1_scores
-        return
+        retlw 1 ; status instead of routing to update score due to stack overflow
+        retlw 0
     
 
 ;*************************************** SCREEN **********************************************
@@ -1816,7 +1839,53 @@ psect code, class=CODE, space=0, delta=2
         decfsz x_counter, F
         goto loop_clear_page
         return
-        
+
+;**************************************** BUZZER ********************************************
+
+    buzzer_off: ; latch the buzzer off
+        banksel LATB
+        bcf LATB, 4
+        return
+    
+    buzzer_on: ; latch the buzzer on
+        banksel LATB
+        bsf LATB, 4
+        return
+
+;**************************************** BUTTONS ********************************************
+    wait_start:
+        banksel PORTB
+        btfsc PORTB, START ; check RB5 - active low
+        goto button_unpressed
+        goto button_pressed
+    
+    button_unpressed:
+        call buzzer_off
+        goto wait_start
+
+    button_pressed:
+        call buzzer_on
+        goto wait_start
+
+    wait_start_press:
+        banksel PORTB
+        btfsc PORTB, START
+        goto wait_start_press
+
+        call buzzer_on
+        call wait100ms
+        call buzzer_off
+        goto wait_button_release
+    
+    wait_button_release:
+        banksel PORTB
+        btfss PORTB, START
+        goto wait_button_release
+        call wait10ms
+        return
+
+
+
 ;**************************************** STARTUP ********************************************
 start:
     call set_frq
@@ -1828,33 +1897,75 @@ start:
     call full_reset_ball
     call clear_scores
     call clear_registers
+    call buzzer_off
     call boot_sequence 
-    call clear_screen 
-    ;call display_start  
-    ;call clear_screen
 
-    ;call temp_loop
-    banksel LATB
-    bcf LATB, 4
+    banksel IOCBN ; interrupt on change PORTB - negative edge register (RST is active low - enable interrupt on falling edge)
+    bsf IOCBN, RST
+
+    banksel PIE0 ; peripheral interrupt enable register (pg 101)
+    bsf PIE0, 4 ; interrupt on change interrupt enable (pg 101)
+
+    banksel INTCON
+    bsf INTCON, 6 ; enable peripherial interrupts (pg 100)
+    bsf INTCON, 7 ; global interrupt enable (pg 100)
+    
+    goto game_init
+
+game_init:
+    call clear_scores
+    call clear_screen
+    call display_start
+    call display_scores
+    call wait_start_press
+
+    call clear_screen
+    call full_reset_ball
+    call render_frame
+    movlw 5
+    call run_countdown
+    call display_scores
+    goto main
 
 
-    ;call wait1000ms ;wait
     ; wait for start button
     ; say starting
     ; wait 1s after start hit
 
-    call wait1000ms
-    call wait1000ms
-    call wait1000ms
-    call wait1000ms
-    call wait1000ms
-    
-
-    goto main
 
     ;x1 = 1 - paddle 2px wide
     ;x2 = 126 - paddle 2px wide
     ;paddle is 11 px tall
+
+;***************************************** COUNTDOWN *****************************************
+
+run_countdown:
+    movwf countdown_timer ; W holds the upper bound when called
+    goto countdown_loop
+
+countdown_loop:
+    movf countdown_timer, W
+    call get_segment
+    call shift_out
+
+    movf countdown_timer, W
+    call get_segment
+    call shift_out
+
+    banksel LATC
+    bcf LATC, RCLK 
+    nop
+    bsf LATC, RCLK
+    nop
+    bcf LATC, RCLK
+
+    call wait1000ms
+
+    decfsz countdown_timer, F
+    goto countdown_loop
+    return
+
+    
         
 ;***************************************** MAIN LOOP *****************************************
 
@@ -1864,8 +1975,8 @@ main:
 
     call update_paddle1
     call update_paddle2
+    call buzzer_off
 
-    
 
     goto physics_loop
 
@@ -1876,6 +1987,18 @@ physics_loop:
     call paddle2_collision
 
     call check_backwalls
+    movwf temp
+    
+    movlw 1
+    xorwf temp, W
+    btfsc STATUS, Z ; if set W = temp
+    goto p1_scores
+
+    movlw 2
+    xorwf temp, W
+    btfsc STATUS, Z ; if set W = temp
+    goto p2_scores
+
     call render_frame
 
     decfsz substeps, F
@@ -1905,9 +2028,23 @@ temp_loop2:
 
 ;**************************************** INTERRUPTS *****************************************
 
-isr:
-    retfie ;return from interrupt
-    ; have reset button call isr
+reset_isr:  
+    banksel IOCBF
+    movf IOCBF, W
+    btfsc STATUS, Z
+    goto isr_exit
+    clrf IOCBF
+    banksel IOCAF
+    clrf IOCAF
+    call buzzer_on
+    call wait100ms
+    call buzzer_off
+    reset
+
+
+isr_exit:
+    retfie
+
 
 end
 
