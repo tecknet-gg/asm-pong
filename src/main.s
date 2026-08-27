@@ -103,9 +103,9 @@ g_1 equ 0b01111100 ; Letter G - 3 wide
 g_2 equ 0b01000100
 g_3 equ 0b01011100
 
-s_1 equ 0b01100100 ; Letter S - 3 wide
+s_1 equ 0b00100100 ; Letter S - 3 wide
 s_2 equ 0b01010100
-s_3 equ 0b01011100
+s_3 equ 0b01001000
 
 t_1 equ 0b01000000 ; Letter T - 3 wide
 t_2 equ 0b01111100
@@ -117,11 +117,33 @@ a_3 equ 0b01111100
 
 r_1 equ 0b01111100 ; Letter R - 3 wide
 r_2 equ 0b01011000
-r_3 equ 0b01110100
+r_3 equ 0b00110100
 
 e_1 equ 0b01111100 ; Letter E - 3 wide
 e_2 equ 0b01010100
 e_3 equ 0b01000100
+
+m_1 equ 0b01111100
+m_2 equ 0b00100000
+m_3 equ 0b00010000
+m_4 equ 0b00100000
+m_5 equ 0b01111100
+
+v_1 equ 0b01111000
+v_2 equ 0b00000100
+v_3 equ 0b01111000
+
+w_1 equ 0b01110000
+w_2 equ 0b00001100
+w_3 equ 0b00010000
+w_4 equ 0b00001100
+w_5 equ 0b01110000
+
+i_1 equ 0b01000100
+i_2 equ 0b01111100
+i_3 equ 0b01000100
+
+
 
 symbol_exc equ 0b01110100 ; Symbol ! - 1 wide
 
@@ -201,7 +223,7 @@ psect common, class=COMMON, space=1; pg(30, 47sg). ds reserves 1 byte. COMMON ha
 
     
 
-    ;15/16 common bytes used :]
+    ;16/16 common bytes used
 
 psect bank0, class=BANK0, space=1 
 
@@ -231,6 +253,8 @@ psect bank0, class=BANK0, space=1
     x_counter: ds 1 
 
     loop_counter: ds 1 ; yet another temporary counter
+
+    buzzer_timer: ds 1
  
 
 ;***************************************** SUBROUTINES ***************************************
@@ -678,6 +702,66 @@ psect code, class=CODE, space=0, delta=2
 
         return
 
+    draw_m:
+        movlw m_1
+        call send_data
+
+        movlw m_2
+        call send_data
+
+        movlw m_3
+        call send_data
+
+        movlw m_4
+        call send_data
+
+        movlw m_5
+        call send_data
+
+        return
+
+    draw_v:
+        movlw v_1
+        call send_data
+
+        movlw v_2
+        call send_data
+
+        movlw v_3
+        call send_data
+        
+        return
+
+    draw_w:
+        movlw w_1
+        call send_data
+
+        movlw w_2
+        call send_data
+
+        movlw w_3
+        call send_data
+
+        movlw w_4
+        call send_data
+
+        movlw w_5
+        call send_data
+
+        return
+
+    draw_i:
+        movlw i_1
+        call send_data
+
+        movlw i_2
+        call send_data
+
+        movlw i_3
+        call send_data
+
+        return
+
     draw_1:
         movlw number_1_1
         call send_data
@@ -781,40 +865,91 @@ psect code, class=CODE, space=0, delta=2
     draw_start:
         ; draws the word start given a loaded cursor
         call draw_s
-        call draw_empty_2
+        call draw_empty_1
         call draw_t
-        call draw_empty_2
+        call draw_empty_1
         call draw_a
-        call draw_empty_2
+        call draw_empty_1
         call draw_r
-        call draw_empty_2
+        call draw_empty_1
         call draw_t
 
         return
 
     draw_reset:
         call draw_r
-        call draw_empty_2
+        call draw_empty_1
         call draw_e
-        call draw_empty_2
+        call draw_empty_1
         call draw_s
-        call draw_empty_2
+        call draw_empty_1
         call draw_e
-        call draw_empty_2
+        call draw_empty_1
         call draw_t
 
         return
 
+    draw_press:
+        call draw_p
+        call draw_empty_1
+        call draw_r
+        call draw_empty_1
+        call draw_e
+        call draw_empty_1
+        call draw_s
+        call draw_empty_1
+        call draw_s
+
+        return
+
+    draw_game:
+        call draw_g
+        call draw_empty_1
+        call draw_a
+        call draw_empty_1
+        call draw_m
+        call draw_empty_1
+        call draw_e
+        call draw_empty_1
+
+        return
+
+    draw_over:
+        call draw_o
+        call draw_empty_1
+        call draw_v
+        call draw_empty_1
+        call draw_e
+        call draw_empty_1
+        call draw_r
+        call draw_empty_1
+
+        return
+
+    draw_wins:
+        call draw_w
+        call draw_empty_1
+        call draw_i
+        call draw_empty_1
+        call draw_n
+        call draw_empty_1
+        call draw_s
+        call draw_empty_1
+
+        return
+
+
+
     draw_p1:
         call draw_p
-        call draw_empty_2
+        call draw_empty_1
         call draw_1
         
         return
     
     draw_p2:
         call draw_p
-        call draw_empty_2
+        call draw_empty_1
         call draw_2
         
         return
@@ -826,6 +961,11 @@ psect code, class=CODE, space=0, delta=2
         movlw empty
         call send_data
 
+        return
+
+    draw_empty_1: ; draw one empty byte
+        movlw empty
+        call send_data
         return
 
     loop_draw:
@@ -842,9 +982,8 @@ psect code, class=CODE, space=0, delta=2
     round_reset_handler:
         call check_score
         call reset_ball
-        call reset_paddles
         call render_frame
-        call wait1000ms
+        call wait_1s
         movlw 3
         call run_countdown
         call display_scores
@@ -853,104 +992,123 @@ psect code, class=CODE, space=0, delta=2
     display_start:
         
         banksel cursor_page
-        movlw 6
-        movwf cursor_page ; PONG drawn on page 1 
+        movlw 5
+        movwf cursor_page ; PONG drawn on page 2
         movlw 55
         movwf cursor_x
         call set_cursor
         call draw_pong
 
         banksel cursor_page
-        movlw 4
-        movwf cursor_page ; left arrow drawn on page 2 
-        movlw 4
+        movlw 3
+        movwf cursor_page
+        movlw 43
         movwf cursor_x
-        call set_cursor 
-        call draw_left_arrow 
+        call set_cursor
+        call draw_press
 
         banksel cursor_page
-        movlw 4
+        movlw 3
         movwf cursor_page
-        movlw 23
+        movlw 66
         movwf cursor_x
         call set_cursor
         call draw_start
 
         banksel cursor_page
-        movlw 4
+        movlw 3
+        movwf cursor_page
+        movlw 86
+        movwf cursor_x
+        call set_cursor
+        call draw_exc
+
+        return
+
+
+
+    draw_game_over:
+        call clear_screen
+
+        banksel cursor_page
+        movlw 6
+        movwf cursor_page
+        movlw 46
+        movwf cursor_x
+        call set_cursor
+        call draw_game
+
+        banksel cursor_page
+        movlw 6
+        movwf cursor_page
+        movlw 67
+        movwf cursor_x
+        call set_cursor
+        call draw_over
+
+        banksel cursor_page
+        movlw 6
         movwf cursor_page
         movlw 83
         movwf cursor_x
         call set_cursor
-        call draw_reset
+        call draw_exc
 
         banksel cursor_page
         movlw 4
         movwf cursor_page
-        movlw 111
+        movlw 62
         movwf cursor_x
         call set_cursor
-        call draw_right_arrow
+        call draw_wins
 
         banksel cursor_page
         movlw 2
         movwf cursor_page
-        movlw 30
+        movlw 44
+        movwf cursor_x
+        call set_cursor
+        call draw_press
+
+        banksel cursor_page
+        movlw 2
+        movwf cursor_page
+        movlw 67
+        movwf cursor_x
+        call set_cursor
+        call draw_reset
+        
+        return
+
+    display_win1:
+        call clear_screen
+        call draw_game_over
+
+        banksel cursor_page
+        movlw 4
+        movwf cursor_page
+        movlw 51
         movwf cursor_x
         call set_cursor
         call draw_p1
 
+        return
+        
+
+  
+    
+    display_win2:
+        call clear_screen
+        call draw_game_over
+
         banksel cursor_page
-        movlw 2
+        movlw 4
         movwf cursor_page
-        movlw 91
+        movlw 51
         movwf cursor_x
         call set_cursor
         call draw_p2
 
-        banksel cursor_page
-        movlw 1
-        movwf cursor_page
-        movlw 33
-        movwf cursor_x
-        call set_cursor
-        call draw_down_arrow
-
-        banksel cursor_page
-        movlw 1
-        movwf cursor_page
-        movlw 94
-        movwf cursor_x
-        call set_cursor
-        call draw_down_arrow
-        
-        return
-        
-        banksel cursor_page
-        clrf cursor_page
-        banksel cursor_x
-        ;clrf cursor_x
-        movlw 50
-        movwf cursor_x
-        call set_cursor
-        call draw_pong
-
-        banksel cursor_page
-        movlw 7
-        movwf cursor_page
-        banksel cursor_x
-        clrf cursor_x
-        call set_cursor
-        call draw_pong
-
-    display_win1:
-        call clear_screen
-        call display_start ;temp
-        return
-    
-    display_win2:
-        call clear_screen
-        call display_start ; temp
         return
 
     p1_wins:
@@ -963,7 +1121,7 @@ psect code, class=CODE, space=0, delta=2
     p2_wins:
         call reset_paddles
         call reset_ball
-        
+        call display_win2
         call wait_start_press
         goto game_init
 ;**************************************** BALL ************************************************
@@ -1008,6 +1166,7 @@ psect code, class=CODE, space=0, delta=2
     check_collisions: ; a bit misleading - checks to see if collisions passes threshold to make ball faster
         
         incf collisions, F ; update collision count    
+        call sound_paddle
 
         movlw T ; load threhold
         xorwf collisions, W ; check if number of collisions is equal to threshold
@@ -1140,12 +1299,14 @@ psect code, class=CODE, space=0, delta=2
         bsf dir, 1
         movlw 0
         movwf yF ; clamp yF to 0
+        call sound_wall
         return
         
     bottom_bounce:
         bcf dir, 1
         movlw 63
         movwf yF ; clamp yF to 63
+        call sound_wall
         return
 
     paddle1_collision:
@@ -1851,6 +2012,34 @@ psect code, class=CODE, space=0, delta=2
         banksel LATB
         bsf LATB, 4
         return
+    
+    process_audio:
+        banksel buzzer_timer
+        movf buzzer_timer, W
+        btfsc STATUS, Z
+        goto buzzer_off
+
+        decf buzzer_timer, F
+        call buzzer_on
+        return
+
+    sound_wall:
+        movlw 2
+        banksel buzzer_timer
+        movwf buzzer_timer
+        return
+
+    sound_paddle:
+        movlw 2
+        banksel buzzer_timer
+        movwf buzzer_timer
+
+    sound_score:
+        movlw 5
+        banksel buzzer_timer
+        movwf buzzer_timer
+        return
+    
 
 ;**************************************** BUTTONS ********************************************
     wait_start:
@@ -1868,6 +2057,12 @@ psect code, class=CODE, space=0, delta=2
         goto wait_start
 
     wait_start_press:
+        
+        call update_paddle1
+        call update_paddle2
+        call render_paddles
+        call wait10ms
+    
         banksel PORTB
         btfsc PORTB, START
         goto wait_start_press
@@ -1944,6 +2139,12 @@ run_countdown:
     goto countdown_loop
 
 countdown_loop:
+    
+    call update_paddle1
+    call update_paddle2
+    call render_paddles
+    call wait10ms
+
     movf countdown_timer, W
     call get_segment
     call shift_out
@@ -1959,15 +2160,31 @@ countdown_loop:
     nop
     bcf LATC, RCLK
 
-    call wait1000ms
+    call wait_1s
 
     decfsz countdown_timer, F
     goto countdown_loop
     return
 
+    wait_1s:
+        movlw 100
+        banksel loop_counter
+        movwf loop_counter
+        goto countdown_paddle_loop
+
+    countdown_paddle_loop:
+        call update_paddle1
+        call update_paddle2
+        call render_paddles
+        call process_audio
+        call wait10ms
+        banksel loop_counter
+        decfsz loop_counter, F
+        goto countdown_paddle_loop
+        return
     
         
-;***************************************** MAIN LOOP *****************************************
+;*************************************lo**** MAIN LOOP *****************************************
 
 main: 
     movf substep_speed, W ; load substep_speed into substep counter
@@ -1988,6 +2205,12 @@ physics_loop:
 
     call check_backwalls
     movwf temp
+
+    movlw 0
+    xorwf temp, W
+    btfss STATUS, Z 
+    call sound_score
+
     
     movlw 1
     xorwf temp, W
@@ -2004,6 +2227,7 @@ physics_loop:
     decfsz substeps, F
     goto physics_loop
 
+    call process_audio
     call wait10ms
     goto main
 
