@@ -26,7 +26,7 @@ The PIC16F18346 console boasts a whopping 2KB of RAM, and a massive 28KB of flas
 
 ## BOM
 
-a bom!
+The detailed bill of materials can be found under [pcb/production/bom.csv](pcb/production/bom.csv). All the components were sourced from AliExpress besides the PIC, since LCSC has much better pricing for the same. 
 
 ## Schematic
 <img width="2339" height="1654" alt="image" src="https://github.com/user-attachments/assets/3066da82-0d2f-4be1-b341-18d3fffaca40" />
@@ -36,9 +36,9 @@ a bom!
 
 ## Assembly
 
-PCB production files can be found under [pcb/production](pcb/production). Board is under 100x100mm, so should cost less than $5 for five boards from either [PCBWay](https://www.pcbway.com/) or [JLCPCB](https://www.jlcpcb.com/). I personally sourced them from JLC. All components are THT, so they should be very easy to solder. Follow the component references as given by the [schematic pdf](assets/schematic.pdf). 
+PCB production files can be found under [pcb/production](pcb/production). Board is under 100x100mm, so should cost less than $5 for five boards from either [PCBWay](https://www.pcbway.com/) or [JLCPCB](https://www.jlcpcb.com/). I personally sourced them from JLC. All components are THT, so they should be very easy to solder. Follow the component references as given by the [schematic pdf](assets/schematic.pdf). Its a straightforward assembly, there isn't much else to say!
 
-The case can be found in the [case](case/) directory. The taper angle is 15º, so I would recommend printing the model angled at 15º such that the top face is parallel to the bed, with ironing turned on for the best finish. 
+The case can be found in the [case](case/) directory. The taper angle is 15º, so I would recommend printing the model angled at 15º such that the top face is parallel to the bed, with ironing turned on for the best finish. PLA is the recommended material. 
 
 With the case printed, the PCB mounts using the M2 mounting holes. No extra hardware needed, it just slots into the case. The case also has small indents in the bottom for rubbery grips. Just fill the indents with hot-glue, then overfill the indent very slightly to make a rubber grip. 
 
@@ -65,4 +65,12 @@ Assuming you're using a PICkit with MPLAB IPE, select the PIC16F18346 under devi
 
 With all that setup, plug in the PICkit's headers into the ICSP header on the board. The top pin of the header (pin closest to the screen) is MCLR. Match that with the pinout of your PICkit. Now download and load the [.hex](out/output.hex) file into the IPE, and click program. Et voila, you should have a fully programmed PIC!
 
+>[!NOTE]
+> If you see glitchy behaviour, or the screen not starting up, make sure the PCB is disconnected from the programmer. When the headers are still connected, it behaves oddly. After that, hit the reset button to re-boot the PIC. 
+
+## Demo
+
+A demo video of an entire game being played out can be found on my [YouTube channel](https://www.youtube.com/watch?v=OH-_ZXIoXKA). Here is a picture of the completed build!
+
+<img width="3072" height="3292" alt="IMG_20260828_135939" src="https://github.com/user-attachments/assets/eedad8ba-e2fd-41e7-88aa-79d98028ff93" />
 
