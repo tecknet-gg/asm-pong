@@ -28,13 +28,16 @@ The PIC16F18346 console boasts a whopping 2KB of RAM, and a massive 28KB of flas
 
 The detailed bill of materials file can be found under [pcb/production/bom.csv](pcb/production/bom.csv). All the components were sourced from AliExpress besides the PIC, since LCSC has much better pricing for the same. The table is reproduced below for convenience.
 
+>[!Note]
+> The capacitor and resistor pricing is the entire bundle price, including all the required values for this project.
+
 
 
 | Item                       | Quantity | Description              |  Price | Source                                                                                                                                                                                                  |
 | -------------------------- | -------: | ------------------------ | -----: | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | PIC16F18346-I/P            |        1 | Microcontroller          |  £1.81 | [LCSC](https://www.lcsc.com/product-detail/C647086.html?s_z=n_q_pic16f18346&spm=wm.fly.bg.0.xh&lcsc_vid=RFZZAwJQR1YIUFFXEgMNVgdQQAUIAQEER1IKUlZfRlcxVlNeQFhfXlBeRFFcVTsOAxUeFF5JWBYZEEoKFBINSQcJGk4%3D) |
-| 100nF Ceramic Capacitor    |        7 | Decoupling capacitor     |      ~ | [AliExpress](https://www.aliexpress.com/item/1005008244407175.html?spm=a2g0o.order_list.order_list_main.203.33291802JVuyPM)                                                                             |
-| 1µF Electrolytic Capacitor |        2 | Bulk capacitor           |      ~ | [AliExpress](https://www.aliexpress.com/item/1005006244064108.html?spm=a2g0o.order_list.order_list_main.316.33291802JVuyPM)                                                                             |
+| 100nF Ceramic Capacitor    |        7 | Decoupling capacitor     |      £1.93 | [AliExpress](https://www.aliexpress.com/item/1005008244407175.html?spm=a2g0o.order_list.order_list_main.203.33291802JVuyPM)                                                                             |
+| 1µF Electrolytic Capacitor |        2 | Bulk capacitor           |      £1.96 | [AliExpress](https://www.aliexpress.com/item/1005006244064108.html?spm=a2g0o.order_list.order_list_main.316.33291802JVuyPM)                                                                             |
 | SSD1306                    |        1 | OLED screen              |  £2.33 | [AliExpress](https://www.aliexpress.com/item/1005006379964006.html?spm=a2g0o.order_list.order_list_main.180.33291802JVuyPM)                                                                             |
 | SN74HC595                  |        2 | Shift registers          |  £0.80 | [AliExpress](https://www.aliexpress.com/item/32796581727.html?spm=a2g0o.order_list.order_list_main.163.33291802JVuyPM)                                                                                  |
 | LD-3161-AS                 |        2 | Seven-segment display    |  £2.33 | [AliExpress](https://www.aliexpress.com/item/1005007531476613.html?spm=a2g0o.order_list.order_list_main.158.33291802JVuyPM)                                                                             |
@@ -46,11 +49,11 @@ The detailed bill of materials file can be found under [pcb/production/bom.csv](
 | Knurled Metal Tone Knob    |        2 | Potentiometer knob       |  £2.01 | [AliExpress](https://www.aliexpress.com/item/1005002748625431.html?spm=a2g0o.order_list.order_list_main.35.33291802JVuyPM)                                                                              |
 | MCP1700-3302E/TO           |        1 | 3.3V LDO                 |  £2.39 | [AliExpress](https://www.aliexpress.com/item/1005012279859529.html?spm=a2g0o.order_list.order_list_main.17.33291802JVuyPM)                                                                              |
 | DC Power Barrel            |        1 | VIN input                |  £1.00 | [AliExpress](https://www.aliexpress.com/item/1005003329078538.html)                                                                                                                                     |
-| 220Ω THT Resistor          |       16 | Current limiting         |      ~ | ~                                                                                                                                                                                                       |
-| 10kΩ THT Resistor          |        3 | RC/MCLR pull-up          |      ~ | ~                                                                                                                                                                                                       |
-| 1kΩ THT Resistor           |        1 | Transistor base resistor |    ~  | ~                                                                                                                                                                                                       |
+| 220Ω THT Resistor          |       16 | Current limiting         | £2.69|[AliExpress](https://www.aliexpress.com/item/1005007714306585.html?spm=a2g0o.order_list.order_list_main.98.74b31802kVDw05)                                                                                                                                                                                                       |
+| 10kΩ THT Resistor          |        3 | RC/MCLR pull-up          |      £2.69|[AliExpress](https://www.aliexpress.com/item/1005007714306585.html?spm=a2g0o.order_list.order_list_main.98.74b31802kVDw05)                                                                                                                                                                                                     |
+| 1kΩ THT Resistor           |        1 | Transistor base resistor |    £2.69  | [AliExpress](https://www.aliexpress.com/item/1005007714306585.html?spm=a2g0o.order_list.order_list_main.98.74b31802kVDw05)                                                                                                                                                                                                       |
 | PICkit 3                   |        1 | ICSP programmer          | £14.19 | [AliExpress](https://www.aliexpress.com/item/1005007470418989.html?spm=a2g0o.order_list.order_list_main.168.33291802JVuyPM)                                                                             |
-| PCB                        |        5 | Custom PCB               |     ~   | [`pcb/production`](pcb/production)                                                                           |
+| PCB                        |        5 | Custom PCB               |     ~   | [pcb/production](pcb/production)                                                                           |
 
 
 ## Schematic
@@ -70,6 +73,44 @@ With the case printed, the PCB mounts using the M2 mounting holes. No extra hard
 <p align="center">
   <img src="assets/renders/render_6.png" width="100%" />
 </p>
+
+## Modifying source code
+
+If you would like to make your own changes to the source code, you'll obviously have to recompile to get the new .hex! To get you started on that, here are a few recommendations.
+
+First, I would lean towards using VSCode over MPLABX IDE. VSCode does require a fair bit more setup, over MPLABX, which is just plug and play, but in my opinion, the overall developer experience is worth that effort, since you get access to all of VSCode's quality of life features.
+
+If you end up using VSCode, you'll need to install the MPLAB extension pack. Using the MCC that comes installed with this pack, you can configure your config bits and such. With that, you then set the compiler to PIC Assembly (PIC-AS/XC8). I would also then recommend you make a custom build task in ```.vscode/task.json```, similar to this:
+
+```json
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "Build PIC HEX",
+            "type": "shell",
+            "command": "cmake --build _build/asm-pong/default && cp $(find out -name '*.hex' | head -n 1) out/output.hex",
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "problemMatcher": [],
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "shared",
+                "showReuseMessage": false,
+                "clear": false
+            }
+        }
+    ]
+}
+```
+
+Hitting the build shortcut will then produce the ```output.hex``` that you can then flash. 
+
+If you choose to go down the MPLABX IDE, all the build tasks and such should work natively without any setup. You also have easier access to the simulators and such. 
 
 ## Flashing firmware
 
