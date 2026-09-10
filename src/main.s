@@ -1,4 +1,3 @@
-
 ;***************************************** CONFIG *******************************************
 
 PROCESSOR 16F18346
@@ -143,8 +142,6 @@ i_1 equ 0b01000100
 i_2 equ 0b01111100
 i_3 equ 0b01000100
 
-
-
 symbol_exc equ 0b01110100 ; Symbol ! - 1 wide
 
 arrow_left_1 equ 0b00010000 ; Left pointing arrow - 12 wide
@@ -217,9 +214,9 @@ psect common, class=COMMON, space=1; pg(30, 47sg). ds reserves 1 byte. COMMON ha
     temp: ds 1 ; temp register
 
     collisions: ds 1 ; counts numbe of collisions for speed increments
-    countdown_timer: ds 1
+    countdown_timer: ds 1 ; countdown timer for countdown subroutine
 
-    ;score: ds 1 ; bit 0 -> 3 - player 1, bit 4 -> 7 - player 2 worth it or not? 
+    ;score: ds 1 ; bit 0 -> 3 - player 1, bit 4 -> 7 maybe?
 
     
 
@@ -250,21 +247,21 @@ psect bank0, class=BANK0, space=1
     mask2: ds 1 
 
     page_counter: ds 1 ; page tracker for clear screen subroutine
-    x_counter: ds 1 
+    x_counter: ds 1 ; counter for x value for page addressing
 
     loop_counter: ds 1 ; yet another temporary counter
 
-    buzzer_timer: ds 1
+    buzzer_timer: ds 1 ; store buzzer time - read every main loop
  
 
 ;***************************************** SUBROUTINES ***************************************
 
 psect code, class=CODE, space=0, delta=2
 ;******************************************** WAIT *******************************************
-    wait125us:
+    wait125us: ;modified template code to work at 32Mhz
         movlw 199
         banksel WAIT125
-        movwf WAIT125; ~125us at 32Mhz -> 199 * 625ns = 124375ns
+        movwf WAIT125 ; ~125us at 32Mhz -> 199 * 625ns = 124375ns
         loop5ns: ;1+1+1+2 = 5
             clrwdt ; 1
             nop; 1
@@ -322,22 +319,22 @@ psect code, class=CODE, space=0, delta=2
 
     setup_ports:
         banksel TRISA
-        movlw 0b00110000 ; set RA4 and RA5 to input
+        movlw 0b00110000 ; set RA4 and RA5 to input - potentiometers
         movwf TRISA
 
         banksel TRISB
-        movlw 0b01100000 ; set RB4 and RB5 to input
+        movlw 0b01100000 ; set RB4 and RB5 to input - buttons
         movwf TRISB
 
         banksel TRISC
         clrf TRISC
     
         banksel ANSELA
-        movlw 0b00110000 ; set pots on RA4 and RA5 to analog
+        movlw 0b00110000 ; set pots on RA4 and RA5 to analog - potentiometers
         movwf ANSELA
 
         banksel ANSELB
-        clrf ANSELB ; set all pins on PORTB to digital
+        clrf ANSELB ; set all pins on PORTB to digital 
 
         banksel ANSELC
         clrf ANSELC ; set all pins on PORTC to digital
@@ -351,7 +348,7 @@ psect code, class=CODE, space=0, delta=2
         movwf LATC ; Latching RC7 (RESET - active low), RC6(DC - direct command) and RC5 (CS - chip select) to HIGH
 
         bcf INTCON, 7 ; disable global interrupts (pg. 103)
-        banksel PPSLOCK ;required sequence (pg.161)
+        banksel PPSLOCK ; required sequence (pg.161)
         movlw 0x55
         movwf PPSLOCK
         movlw 0xAA
@@ -366,7 +363,7 @@ psect code, class=CODE, space=0, delta=2
         movlw 0b00011001 ;11001 = SDO1/SDA1 (pg 163) - Serial Data Out for screen
         movwf RC4PPS
 
-        banksel PPSLOCK
+        banksel PPSLOCK ; required sequence (pg.161)
         movlw 0x55
         movwf PPSLOCK
         movlw 0xAA
@@ -378,7 +375,7 @@ psect code, class=CODE, space=0, delta=2
     setup_adc:
         banksel ADCON1 ; ADCON1 - setup ADC, ADCON0 - use ADC
         movlw 0b01110000
-        movwf ADCON1 ; left justified, dedicated RC oscillator, VREFs connected to VDD and VSS (pg 240, 241, 245)
+        movwf ADCON1 ; left justified, dedicated RC oscillator, VREFs connected to VDD and VSS (pg 240, 241, 245) - left as defaults
 
         banksel ADCON0
         bsf ADCON0, 0 ; turn on ADC (pg 244)
@@ -393,15 +390,15 @@ psect code, class=CODE, space=0, delta=2
         movwf old_y2
     full_reset_ball:
         call clear_screen
-
-        banksel old_xF
+        
         movlw 64
         movwf xF ; set x coordinate
+        banksel old_xF
         movwf old_xF
 
-        banksel old_yF
         movlw 32
         movwf yF ; set y coordinate
+        banksel old_yF
         movwf old_yF
 
         clrf xS ; clear the sub pixel values
@@ -423,7 +420,7 @@ psect code, class=CODE, space=0, delta=2
         movwf collisions ; set collisions to zero
         return
 
-    reset_ball: ; retain direction data
+    reset_ball: ; retain prior direction and speed - reset ball to the middle
         call clear_screen
         
         movlw 64
@@ -450,8 +447,9 @@ psect code, class=CODE, space=0, delta=2
         movlw 0
         movwf collisions
         return
+    
     clear_scores:
-        banksel s1
+        banksel s1 ; just clear the scores
         clrf s1
         clrf s2
         return
@@ -466,14 +464,14 @@ psect code, class=CODE, space=0, delta=2
 ;***************************************** ADC ***********************************************
     read_paddle1:
         banksel ADCON0
-        movlw 0b00010101 ; select RA5 as input channel (pg241)
+        movlw 0b00010101 ; select RA5 as input channel (pg241) - pot 1
         movwf ADCON0
         call run_adc
         return
 
     read_paddle2:
         banksel ADCON0 ;
-        movlw 0b00010001 ; select RA4 as input channel (pg241)
+        movlw 0b00010001 ; select RA4 as input channel (pg241) - pot 2
         movwf ADCON0
         call run_adc
         return
@@ -482,13 +480,13 @@ psect code, class=CODE, space=0, delta=2
         call wait125us ; wait for acquisition (pg241)
         banksel ADCON0
         bsf ADCON0, 1 ; 1st bit is ADC status
-        goto wait_adc
+        goto wait_adc ; wait for adc to finish
 
     wait_adc:
         banksel ADCON0
         btfsc ADCON0, 1; test to see if conversion is done
         goto wait_adc; go back to btsf if not done
-        banksel ADRESH
+        banksel ADRESH 
         movf ADRESH, W; get the 8 upper bits and return to working
         return
 
@@ -496,15 +494,15 @@ psect code, class=CODE, space=0, delta=2
     check_score:
         banksel s1
         movf s1, W
-        xorlw 9 ; check if player 1 has 9 points
-        btfsc STATUS, Z ; read the Z status bit.
-        goto p1_wins
+        xorlw 9 ; check if player 1 has 9 points, if so Z flag is set
+        btfsc STATUS, Z ; read the Z status bit
+        goto p1_wins ; handler for p1 wins
 
         banksel s2
         movf s2, W
-        xorlw 9
-        btfsc STATUS, Z
-        goto p2_wins
+        xorlw 9 ; check if player 2 has 9 points, if so Z flag is set
+        btfsc STATUS, Z ; read the Z status bit
+        goto p2_wins ; handler for p2 wins
 
         return
 
@@ -519,10 +517,10 @@ psect code, class=CODE, space=0, delta=2
         return
 
     p1_scores:
-        call increment_score1
-        call display_scores
+        call increment_score1 ; increment player 1 score
+        call display_scores ; update seven segment displays
         bcf dir, 0
-        goto round_reset_handler
+        goto round_reset_handler ; reset game systems for new round
  
     p2_scores:
         call increment_score2
@@ -534,7 +532,7 @@ psect code, class=CODE, space=0, delta=2
         banksel s2 ; shift out the two score bytes to the seven segment displays
         movf s2, W ; load score 2 into working
 
-        call get_segment
+        call get_segment ; branching logic to get the segment byte to shift out
         call shift_out
 
         banksel s1
@@ -552,7 +550,7 @@ psect code, class=CODE, space=0, delta=2
         return
 
     get_segment:
-        brw
+        brw ; branch with respect to w - enhanced mid range pics only
         retlw 0b00111111 ; 0
         retlw 0b00000110 ; 1
         retlw 0b01011011 ; 2
@@ -569,10 +567,12 @@ psect code, class=CODE, space=0, delta=2
         movlw 8
         banksel loop_counter
         movwf loop_counter ; send out 8 bits
+
+        goto bit_loop ; shift out each bit one by one
     
     bit_loop:
         banksel LATC
-        bcf LATC, SER ;  clear serial data first
+        bcf LATC, SER ; clear serial data first
         btfsc temp, 7 ; check MSB, if 1, set SER to 1, otherwise leave as zero
         bsf LATC, SER ; set SER high if 1
         
@@ -584,14 +584,13 @@ psect code, class=CODE, space=0, delta=2
         banksel loop_counter
         decfsz loop_counter, F ; loop 8 times to send all 8 bits
         goto bit_loop
-
         return
 
 
 
 ;************************************ ASSETS DRAWER *******************************************
 
-    draw_p: ; all asset drawers assume cursor is loaded
+    draw_p: ; all asset drawers assume cursor is loaded - relies on the ssd1306 auto incrementing x address after each byte is sent
         movlw p_1
         call send_data
 
@@ -803,7 +802,7 @@ psect code, class=CODE, space=0, delta=2
         call send_data
 
         banksel loop_counter
-        movlw 9
+        movlw 9 ; draw the same byte pattern 9 times
         movwf loop_counter
         movlw arrow_left_4_12
         movwf temp
@@ -813,7 +812,7 @@ psect code, class=CODE, space=0, delta=2
 
     draw_right_arrow:
         banksel loop_counter
-        movlw 9
+        movlw 9 ; draw the same byte pattern 9 times
         movwf loop_counter
         movlw arrow_right_1_9
         movwf temp
@@ -938,8 +937,6 @@ psect code, class=CODE, space=0, delta=2
 
         return
 
-
-
     draw_p1:
         call draw_p
         call draw_empty_1
@@ -980,16 +977,16 @@ psect code, class=CODE, space=0, delta=2
 
 ;**************************************** GAME ************************************************
     round_reset_handler:
-        call check_score
-        call reset_ball
-        call render_frame
-        call wait_1s
-        movlw 3
-        call run_countdown
-        call display_scores
+        call check_score ; check to see if either player got 9 points
+        call reset_ball ; reset the ball
+        call render_frame ; render the frame - probably redundant
+        call wait_1s ; wait a second before displaying the countown so score is visible
+        movlw 3 ; set countdown timer to 3
+        call run_countdown ; run the countdown
+        call display_scores ; update the seven segment displays back to the score
         goto main ; resume game
     
-    display_start:
+    display_start: ; asseble the assets to draw the score screen
         
         banksel cursor_page
         movlw 5
@@ -1001,7 +998,7 @@ psect code, class=CODE, space=0, delta=2
 
         banksel cursor_page
         movlw 3
-        movwf cursor_page
+        movwf cursor_page ; press drawn on page 3
         movlw 43
         movwf cursor_x
         call set_cursor
@@ -1009,7 +1006,7 @@ psect code, class=CODE, space=0, delta=2
 
         banksel cursor_page
         movlw 3
-        movwf cursor_page
+        movwf cursor_page ; start drawn on page 3
         movlw 66
         movwf cursor_x
         call set_cursor
@@ -1025,9 +1022,7 @@ psect code, class=CODE, space=0, delta=2
 
         return
 
-
-
-    draw_game_over:
+    draw_game_over: ; basically the ame as the start screen, but with the game over screen - used as the base ending screen
         call clear_screen
 
         banksel cursor_page
@@ -1080,7 +1075,7 @@ psect code, class=CODE, space=0, delta=2
         
         return
 
-    display_win1:
+    display_win1: ;  player specific win screen - can probably be combined with a paramater to save space but oh well
         call clear_screen
         call draw_game_over
 
@@ -1094,10 +1089,7 @@ psect code, class=CODE, space=0, delta=2
 
         return
         
-
-  
-    
-    display_win2:
+    display_win2: ; same as before, but p2 instead of p1
         call clear_screen
         call draw_game_over
 
@@ -1111,41 +1103,41 @@ psect code, class=CODE, space=0, delta=2
 
         return
 
-    p1_wins:
+    p1_wins: ; win handler for player 1 
         call reset_paddles
         call reset_ball
         call display_win1
         call wait_start_press
         goto game_init
 
-    p2_wins:
+    p2_wins: ; win handler for player 2 - copy of p1_wins but routes to display_win2
         call reset_paddles
         call reset_ball
         call display_win2
         call wait_start_press
         goto game_init
 ;**************************************** BALL ************************************************
-    update_ball:
-        btfsc dir, 0 ; 0 - left, 1 - right
-        goto ball_right
+    update_ball: ; main entry point for ball updates
+        btfsc dir, 0 ; 0 - left, 1 - right, check direction and branch accordingly
+        goto ball_right 
         goto ball_left
     
     ball_right:
         movf x_vel, W
-        addwf xS, F
-        btfsc STATUS, C ; did it overflow?
+        addwf xS, F ; add sub pixel velocity to sub pixel position - x only
+        btfsc STATUS, C ; did it overflow - if so add one to full pixel position
         incf xF, F
         goto update_y
 
     ball_left:
         movf x_vel, W
-        subwf xS, F
-        btfss STATUS, C ; did it carry?
+        subwf xS, F ; subtract sub pixel velocity from sub pixel position - x only
+        btfss STATUS, C ; did it carry - if so subtract one from full pixel position
         decf xF, F
         goto update_y
 
-    update_y:
-        btfss dir, 1 ; 0 - up, 1 - down
+    update_y: ; main entry point to update the ball's y position
+        btfss dir, 1 ; 0 - up, 1 - down, check direction and branch accordingly
         goto ball_up
         goto ball_down
     
@@ -1166,31 +1158,31 @@ psect code, class=CODE, space=0, delta=2
     check_collisions: ; a bit misleading - checks to see if collisions passes threshold to make ball faster
         
         incf collisions, F ; update collision count    
-        call sound_paddle
+        call sound_paddle ; centralised sound call for paddle collisions - attempted putting it the router, but this is more elegant
 
-        movlw T ; load threhold
+        movlw T ; load threhold (6)
         xorwf collisions, W ; check if number of collisions is equal to threshold
-        btfss STATUS, Z
+        btfss STATUS, Z ; if equal, Z is set (skip), otherwise return
         return
         
-        clrf collisions
+        clrf collisions ; reset collision counter
         call increment_velocity ; if equal to threshold, increment speed, otherwise return
         return
 
-    increment_velocity:
-        movlw 2 ; check substep speed
+    increment_velocity: ; main entry point for velocity ramping
+        movlw 2 ; check substep speed - if already 3, skip to ramp_3 as that handles that substep layer (see canvas for more details)
         xorwf substep_speed, W
-        btfsc STATUS, Z
+        btfsc STATUS, Z 
         goto ramp_2 ; if 2 substeps, use the substep 2 ramp
         goto ramp_3 ; if 3 substeps, use the substep 3 ramp
         
     ramp_2:
         movlw 224
-        xorwf x_vel, W ; check if max speed reached for 2 substeps
+        xorwf x_vel, W ; check if max speed reached for 2 substeps (maxed out at 224)
         btfsc STATUS, Z
-        goto transition_3 ; if so, transition to 3 substeps
+        goto transition_3 ; if maxed, transition to 3 substeps
 
-        movlw 32 ; otherwise add 32 to speed
+        movlw 32 ; otherwise add 32 to speed (approximation but close enough)
         addwf x_vel, F
         return
 
@@ -1202,55 +1194,55 @@ psect code, class=CODE, space=0, delta=2
         return
 
     ramp_3:
-        movlw 255 ; if 255, don't change - max speed reached
+        movlw 255 ; if 255, don't change - speed saturate (~0.6s between paddles)
         xorwf x_vel, W
         btfsc STATUS, Z
         return
 
-        movlw 22 ; increment by 22 instead of 32
+        movlw 22 ; increment by 22 instead of 32 - 3 substeps mean each substep is quicker, so increment by less to keep speed progression close to linear
         addwf x_vel, F
 
         btfss STATUS, C
-        return ; if no carry occured we didn't overflow and become slow
-
-        movlw 255
+        return ; if no carry occured we didn't overflow and become very slow
+        movlw 255 ; if carried - overflowed, clamping to max value (just in case, should never hit this with current values)
         movwf x_vel
         return
     
 
 ;************************************** PADDLE ADC ********************************************
     update_paddle1:
-        call read_paddle1
+        call read_paddle1 ;  adc on paddle 1
         
-        call scale_paddle
-        call clamp
+        call scale_paddle ; scale paddles to 64 tall
+        call clamp ; clamp values between 5-59 (so it doesn't go off screen)
         
-        banksel y1
+        banksel y1 ; store working into y1 
         movwf y1
         return
     
     update_paddle2:
-        call read_paddle2
+        call read_paddle2 ; same as paddle 1 but for paddle 2
         
         call scale_paddle
         call clamp
 
-        banksel y2
+        banksel y2 
         movwf y2
         return
 
     scale_paddle:
         movwf y_temp
         lsrf y_temp, F ; right shift
-        lsrf y_temp, F ; right shift
+        lsrf y_temp, F ; right shift ; divide y by 4 (256/4 gives a range of 64)
         return
+
     clamp:
-        movlw 5
+        movlw 5 ; if smaller than 5, clamp to 5
         subwf y_temp, W 
         btfss STATUS, C
         goto clamp_low
 
-        movlw 59
+        movlw 59 ; if greater than 59, clamp to 59
         subwf y_temp, W
         btfsc STATUS, C
         goto clamp_high
@@ -1258,7 +1250,7 @@ psect code, class=CODE, space=0, delta=2
         movf y_temp, W
         return
 
-    clamp_low:
+    clamp_low: 
         movlw 5
         return
     
@@ -1267,7 +1259,7 @@ psect code, class=CODE, space=0, delta=2
         return
 
 ;*************************************  COLLISION *********************************************
-    check_walls:
+    check_walls: ; main entry point for wall collision checks checks ceiling an floor (walls is also a bit misleading)
         call check_top
         call check_bottom
         return
@@ -1296,17 +1288,17 @@ psect code, class=CODE, space=0, delta=2
         
     
     top_bounce:
-        bsf dir, 1
+        bsf dir, 1 ; invert direction if it hits the ceiling
         movlw 0
         movwf yF ; clamp yF to 0
-        call sound_wall
+        call sound_wall ; play wall sound
         return
         
-    bottom_bounce:
+    bottom_bounce: ; also invert direction if it hits the floor
         bcf dir, 1
         movlw 63
         movwf yF ; clamp yF to 63
-        call sound_wall
+        call sound_wall 
         return
 
     paddle1_collision:
@@ -1329,7 +1321,7 @@ psect code, class=CODE, space=0, delta=2
         goto bottom_paddle1 ; if yF>y1, ball hit bottom of paddle
         
 
-    top_paddle1:
+    top_paddle1: ; handler for if is above the center of the paddle
         movf yF, W ;convert value to positive
         subwf y1, W
     
@@ -1347,9 +1339,9 @@ psect code, class=CODE, space=0, delta=2
         call check_collisions ; check to see if ball should speed up
 
         movf diff, W ; pass distance to the router
-        goto offset_router
+        goto offset_router ; sets the y speed based on precomputed angle offsets depending on collision region to simulate different reflection angles
 
-    middle_paddle1:
+    middle_paddle1: ; handler for if it hits the center of the paddle
         bsf dir, 0
         
         movlw 3
@@ -1360,7 +1352,7 @@ psect code, class=CODE, space=0, delta=2
         clrf y_vel ; set y velocity to zero
         return
 
-    bottom_paddle1:
+    bottom_paddle1: ; handler if it is below the center of the paddle
         movwf diff
         sublw 5 ; 
 
@@ -1451,9 +1443,9 @@ psect code, class=CODE, space=0, delta=2
 
     offset_router:
         movwf temp ; 
-        
+        ; could be looped, but would probably take more lines
         decf temp, F ; decrement difference, if equal to zero, route offset 1, if diff > 1, move onto next decrement check cycle
-        btfsc STATUS, Z
+        btfsc STATUS, Z 
         goto offset_1
 
         decf temp, F
@@ -1469,8 +1461,13 @@ psect code, class=CODE, space=0, delta=2
         goto offset_4
         goto offset_5
 
+    ; offset handlers assume preset directions (particularly y) - sets the value of y velocity based on a ratio to achieve specific angles
+    ; if angle θ targeted, tan(θ) = y_vel/x_vel, so y_vel = tan(θ) * x_vel
+    ; tan(θ) is precomputed, then approximated by using the sum of fractions with denominator to the power of 2 (1/2^n) to get past the lack of multiplication/division instructions
+    ; the approximations are close enough - they are as follow:
+
     offset_0:
-        clrf y_vel
+        clrf y_vel ; zero y velocity - stright reflection
         return
 
     offset_1:
@@ -1561,7 +1558,7 @@ psect code, class=CODE, space=0, delta=2
         addwf y_vel, F ; 1+3/4 ~ 1.73 = 60º
         return
 
-    check_backwalls:
+    check_backwalls: ; entry point to check back wall collisions for scoring
 
         btfss dir, 0
         goto check_backwall1        
@@ -1605,15 +1602,6 @@ psect code, class=CODE, space=0, delta=2
         banksel SSP1BUF ; write byte to SPI Buffer from W
         movwf SSP1BUF
     
-    wait_spi:
-        banksel SSP1STAT ; check status bit
-        btfss SSP1STAT, 0
-        goto wait_spi
-        
-        banksel SSP1BUF
-        movf SSP1BUF, W
-        return
-
     send_command:
         banksel LATC ; write command from working to screen
         bcf LATC, OLED_DC; pull DC low to indicate command
@@ -1640,8 +1628,15 @@ psect code, class=CODE, space=0, delta=2
         banksel LATC ;
         
         bcf LATC, OLED_RS ; enable reset
-        call wait10ms
+        call wait10ms ; nop was too fast
         bsf LATC, OLED_RS ; disable reset
+
+        ; i don't rememeber what half of these commands do, pulled for the ssd1306 datasheet
+        ; only thing to note is that it sets it to page address mode instead of horizontal addressing (would require a full frame buffer - (128x64)/8 = 1024 bytes of RAM = 50% of total RAM) 
+        ; side note final project took up 1.8% of RAM - plenty of overhead for a full page buffer
+
+        ; page addressing mode splits the 128x64 pixel screen into 8 vertical pages (each 128x8 pixels)
+        ; to draw on the screen you select a page (0-7), then set an x value (0-127), and then you pass a byte for those 8 pixels at (x, page), and that is rendered
 
         movlw OLED_OFF
         call send_command
@@ -1801,6 +1796,16 @@ psect code, class=CODE, space=0, delta=2
         return
 
     calc_paddle:
+        
+        ; the paddle being 11 pixels tall, and pages being 8 pixels tall means the paddle is a massive inconvenience (but an 8 pixel paddle looks too small)
+        ; to get around it, we have 3 masks, one for each page that it could take up
+        ; we get the top pixel of the paddle (by subtracting 5 from the center y coordinate)
+        ; then we divide by 8 to get the page, and mod 8 to get its location on the page (for example 43 would be page 5, offset 3 - offset meaning 3rd pixel on that page)
+        ; the masks default to the values of 0b11111111, 0b00000111 and 0b00000000. thats read LSB to MSB, mask0 to mask2. 
+        ; to get the approprimate masks, we shif the masks left by the offset, and then we draw each mask at the corresponding pages and x value. 
+
+        ; for y coordinate of 43, it would be page 5, offset 3, so masks would be shifted thrice to 0b00011111, 0b00011111 and 0b00000000. mask0 - page 5, mask1 - page 6, mask2 - page 7
+    
         movwf temp
 
         banksel cursor_page
@@ -1821,10 +1826,11 @@ psect code, class=CODE, space=0, delta=2
         movlw 0b00000111
         movwf mask1
 
-        clrf mask2
+        clrf mask2 ; 0b00000000
 
         movf temp, F ; default mask if offset is zero
-        btfsc STATUS, Z
+        btfss STATUS, Z
+        goto shift_loop
         return
 
     shift_loop:
@@ -1836,7 +1842,6 @@ psect code, class=CODE, space=0, delta=2
         rlf mask2, F ; rotate left, C drops into LSB
         decfsz temp, F ; decrement till zero
         goto shift_loop
-
         return
 
     erase_paddle:
@@ -2014,14 +2019,16 @@ psect code, class=CODE, space=0, delta=2
         return
     
     process_audio:
-        banksel buzzer_timer
+        banksel buzzer_timer ; buzzer_timer stores number of cycles to keep buzzer on for, process_audio called once every main loop, and updates the buzzer state
         movf buzzer_timer, W
         btfsc STATUS, Z
         goto buzzer_off
-
         decf buzzer_timer, F
         call buzzer_on
         return
+
+    ; different sounds load different values into buzzer_timer
+    ; could explore using pwm to generate different frequencies for more complex sounds
 
     sound_wall:
         movlw 2
@@ -2042,7 +2049,7 @@ psect code, class=CODE, space=0, delta=2
     
 
 ;**************************************** BUTTONS ********************************************
-    wait_start:
+    wait_start: ; waits for the start button to be pressed - deprecated
         banksel PORTB
         btfsc PORTB, START ; check RB5 - active low
         goto button_unpressed
@@ -2053,10 +2060,10 @@ psect code, class=CODE, space=0, delta=2
         goto wait_start
 
     button_pressed:
-        call buzzer_on
+        call buzzer_on 
         goto wait_start
 
-    wait_start_press:
+    wait_start_press: ; waits for start to be pressed whilst also letting the paddle move around making it more fun
         
         call update_paddle1
         call update_paddle2
@@ -2070,20 +2077,19 @@ psect code, class=CODE, space=0, delta=2
         call buzzer_on
         call wait100ms
         call buzzer_off
-        goto wait_button_release
+        call wait10ms
+        return
     
-    wait_button_release:
+    wait_button_release: ; not used
         banksel PORTB
         btfss PORTB, START
         goto wait_button_release
         call wait10ms
         return
 
-
-
 ;**************************************** STARTUP ********************************************
 start:
-    call set_frq
+    call set_frq ; all the setup functions
     call setup_ports
     call setup_pps
     call setup_spi
@@ -2108,13 +2114,11 @@ start:
     goto game_init
 
 game_init:
-    call clear_scores
+    call clear_scores ; game state initialisation
     call clear_screen
     call display_start
     call display_scores
     call wait_start_press
-
-    call clear_screen
     call full_reset_ball
     call render_frame
     movlw 5
@@ -2138,12 +2142,11 @@ run_countdown:
     movwf countdown_timer ; W holds the upper bound when called
     goto countdown_loop
 
-countdown_loop:
+countdown_loop: ; performs the countdown whilst letting the paddles move - keep in theme with the start also letting you move paddles - also prevents the paddles from snapping to position at game start
     
     call update_paddle1
     call update_paddle2
     call render_paddles
-    call wait10ms
 
     movf countdown_timer, W
     call get_segment
@@ -2166,7 +2169,7 @@ countdown_loop:
     goto countdown_loop
     return
 
-    wait_1s:
+    wait_1s: 
         movlw 100
         banksel loop_counter
         movwf loop_counter
@@ -2184,7 +2187,7 @@ countdown_loop:
         return
     
         
-;*************************************lo**** MAIN LOOP *****************************************
+;***************************************** MAIN LOOP *****************************************
 
 main: 
     movf substep_speed, W ; load substep_speed into substep counter
@@ -2206,20 +2209,21 @@ physics_loop:
     call check_backwalls
     movwf temp
 
-    movlw 0
+    movlw 0 ; read status flag - 0 = no score, 1 = p1 scored, 2 = p2 scored - status flag because stack overflow with the gotos during backwall collision branching
     xorwf temp, W
     btfss STATUS, Z 
-    call sound_score
+    call sound_paddle
 
-    
     movlw 1
     xorwf temp, W
     btfsc STATUS, Z ; if set W = temp
+    call sound_score
     goto p1_scores
 
     movlw 2
     xorwf temp, W
     btfsc STATUS, Z ; if set W = temp
+    call sound_score
     goto p2_scores
 
     call render_frame
@@ -2227,11 +2231,11 @@ physics_loop:
     decfsz substeps, F
     goto physics_loop
 
-    call process_audio
+    call process_audio ; called once every physics loop - actually a bug now that i comment - it should be once every main loop, makes the sound dependent on ball speed
     call wait10ms
     goto main
 
-temp_loop:
+temp_loop: ; temporary testing loops
     call update_paddle1
     call update_paddle2
 
@@ -2253,22 +2257,17 @@ temp_loop2:
 ;**************************************** INTERRUPTS *****************************************
 
 reset_isr:  
-    banksel IOCBF
-    movf IOCBF, W
-    btfsc STATUS, Z
-    goto isr_exit
-    clrf IOCBF
-    banksel IOCAF
-    clrf IOCAF
-    call buzzer_on
+    banksel IOCBF ; interrupt on change PORTB - flag register (pg176)
+    movf IOCBF, W ; move to working
+    btfsc STATUS, Z ; if no interrupt flag, return 
+    retfie
+    clrf IOCBF ; clear interrupt flag
+    banksel IOCAF ; 
+    ;clrf IOCAF ; get rid of this
+    call buzzer_on ; beep buzzer
     call wait100ms
     call buzzer_off
-    reset
+    reset ; reset PIC (pg 480)
 
-
-isr_exit:
-    retfie
-
-
-end
+end   
 
