@@ -2251,9 +2251,6 @@ temp_loop2:
     call display_start
     goto temp_loop2
 
-
-    
-
 ;**************************************** INTERRUPTS *****************************************
 
 reset_isr:  
