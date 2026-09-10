@@ -1,0 +1,20 @@
+Item,Quantity,Description,Price,Source
+PIC16F18346-I/P,1,Microcontroller,£1.81,https://www.lcsc.com/product-detail/C647086.html?s_z=n_q_pic16f18346&spm=wm.fly.bg.0.xh&lcsc_vid=RFZZAwJQR1YIUFFXEgMNVgdQQAUIAQEER1IKUlZfRlcxVlNeQFhfXlBeRFFcVTsOAxUeFF5JWBYZEEoKFBINSQcJGk4%3D
+100nF Ceramic Capacitor,7,Decoupling capacitor,~,https://www.aliexpress.com/item/1005008244407175.html?spm=a2g0o.order_list.order_list_main.203.33291802JVuyPM
+1uF Electrolytic Capacitor,2,Bulk capacitor,~,https://www.aliexpress.com/item/1005006244064108.html?spm=a2g0o.order_list.order_list_main.316.33291802JVuyPM
+SSD1306,1,OLED Screen,£2.33,https://www.aliexpress.com/item/1005006379964006.html?spm=a2g0o.order_list.order_list_main.180.33291802JVuyPM
+SN74HC595,2,Shift registers,£0.80,https://www.aliexpress.com/item/32796581727.html?spm=a2g0o.order_list.order_list_main.163.33291802JVuyPM
+LD-3161-AS,2,Seven segment display,£2.33,https://www.aliexpress.com/item/1005007531476613.html?spm=a2g0o.order_list.order_list_main.158.33291802JVuyPM
+Tactile buttons,2,Push buttons,£1.16,https://www.aliexpress.com/item/1005010485096642.html?spm=a2g0o.order_list.order_list_main.138.33291802JVuyPM
+RV09 Potentiometers,2,Potentiometers,£1.08,https://www.aliexpress.com/item/4000665266312.html?spm=a2g0o.order_list.order_list_main.128.33291802JVuyPM
+Buzzer,1,Active buzzer,£1.80,https://www.aliexpress.com/item/1005010321957502.html?spm=a2g0o.order_list.order_list_main.80.33291802JVuyPM
+2N2222 NPN,1,Buzzer transistor,£1.00,https://www.aliexpress.com/item/1005005776372882.html?spm=a2g0o.order_list.order_list_main.68.33291802JVuyPM
+1N4148 Diode,1,Flyback diode,£1.00,https://www.aliexpress.com/item/1005008512103805.html?spm=a2g0o.order_list.order_list_main.50.33291802JVuyPM
+Knurled Metal Tone Knob,2,Potentiometer knob,£2.01,https://www.aliexpress.com/item/1005002748625431.html?spm=a2g0o.order_list.order_list_main.35.33291802JVuyPM
+MCP1700-3302E/TO,1,LDO,£2.39,https://www.aliexpress.com/item/1005012279859529.html?spm=a2g0o.order_list.order_list_main.17.33291802JVuyPM
+DC Power Barrel,1,VIN,£1.00,https://www.aliexpress.com/item/1005003329078538.html?spm=a2g0o.productlist.main.2.32baIchEIchEJJ&algo_pvid=a13b0cbe-1661-4347-a7fb-251c5d5a3192&algo_exp_id=a13b0cbe-1661-4347-a7fb-251c5d5a3192-1&pdp_ext_f=%7B%22order%22%3A%22176%22%2C%22eval%22%3A%221%22%2C%22fromPage%22%3A%22search%22%7D&pdp_npi=6%40dis%21GBP%211.13%211.07%21%21%211.49%211.41%21%400b5e1a3817879210178758433e1091%2112000025238538736%21sea%21UK%216035689730%21X%211%210%21n_tag%3A-29919%3Bd%3Ae87d63eb%3Bm03_new_user%3A-29895%3BpisId%3A5000000215927573&curPageLogUid=vuCodrfxwzDG&utparam-url=scene%3Asearch%7Cquery_from%3A%7Cx_object_id%3A1005003329078538%7C_p_origin_prod%3A
+220Ω THT Resistor,16,Current limiting,~,~
+10kΩ THT Resistor,3,RC/MCLR pull-up,~,~
+1kΩ THT Resistor,1,Transistor base resistor,~,~
+PICkit3,1,ICSP Programmer,£14.19,https://www.aliexpress.com/item/1005007470418989.html?spm=a2g0o.order_list.order_list_main.168.33291802JVuyPM
+PCB,5,PCB,~,Check pcb/production for procution gerber files. Source form JLCPCB or PCBway etc.
