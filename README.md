@@ -2,7 +2,7 @@
 
   <h1>asm-pong</h1>
 
-  <p>pong implemented in assembly!</p>
+  <p>pong <a href="https://www.youtube.com/watch?v=OH-_ZXIoXKA">implemented</a> in assembly!</p>
 
 <p align="center">
   <img src="assets/renders/render_5.png" width="100%" />
