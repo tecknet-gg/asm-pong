@@ -122,23 +122,23 @@ e_1 equ 0b01111100 ; Letter E - 3 wide
 e_2 equ 0b01010100
 e_3 equ 0b01000100
 
-m_1 equ 0b01111100
-m_2 equ 0b00100000
+m_1 equ 0b01111100 ; Letter M - 5 wide
+m_2 equ 0b00100000 
 m_3 equ 0b00010000
 m_4 equ 0b00100000
 m_5 equ 0b01111100
 
-v_1 equ 0b01111000
+v_1 equ 0b01111000 ; Letter V - 3 wide
 v_2 equ 0b00000100
 v_3 equ 0b01111000
 
-w_1 equ 0b01110000
+w_1 equ 0b01110000 ; Letter W - 5 wide
 w_2 equ 0b00001100
 w_3 equ 0b00010000
 w_4 equ 0b00001100
 w_5 equ 0b01110000
 
-i_1 equ 0b01000100
+i_1 equ 0b01000100 ; Letter I - 3 wide
 i_2 equ 0b01111100
 i_3 equ 0b01000100
 
@@ -313,7 +313,7 @@ psect code, class=CODE, space=0, delta=2
 ;******************************************** SETUP ******************************************
     set_frq:
         banksel OSCFRQ
-        movlw 0110B
+        movlw 0b0110
         movwf OSCFRQ ; set to 32Mhz (pg.93)
         return
 
